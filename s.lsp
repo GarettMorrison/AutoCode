@@ -1,2 +1,3 @@
 ;Faster way to type loading function
-(load "gCustom")
+(load "exp")
+(load "ext")
