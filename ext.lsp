@@ -56,7 +56,7 @@
 	(setq ss (ssget '((0 . "LINE")))
 		n (1- (sslength ss))
 	)
-	(setq len (getreal "\nEnter a length"))
+	(setq len (getreal "\nEnter output length: "))
 	; (princ "\nThis may take a minute.")
 	(while (>= n 0)
 		;get line entity
@@ -105,7 +105,7 @@
 	(setq ss (ssget '((0 . "LINE")))
 		n (1- (sslength ss))
 	)
-	(setq len (getreal "\nEnter output length"))
+	(setq len (getreal "\nEnter output length: "))
 	; (princ "\nThis may take a minute.")
 	(while (>= n 0)
 		;get line entity
@@ -124,13 +124,20 @@
 		(setq pEx1 (extend midpoint p1 (/ len 2)))
 		(setq pEx2 (extend midpoint p2 (/ len 2)))
 
-		;Save changes to line if is larger
-		(if (> (getDist pEx1 pEx2) len) (
-			(setq line (subst (cons (car (assoc 10 line)) pEx1) (assoc 10 line) line))
-			(setq line (subst (cons (car (assoc 11 line)) pEx2) (assoc 11 line) line))
-			(entmod line)
-		))
+		; (princ len)
+		; (princ " > ")
+		; (princ (getDist p1 p2))
 		
+		;;;Save changes to line if is larger
+		(cond 
+			( ( > len (getDist p1 p2) ) ;If new line is longer
+				(setq line (subst (cons (car (assoc 10 line)) pEx1) (assoc 10 line) line))
+				(setq line (subst (cons (car (assoc 11 line)) pEx2) (assoc 11 line) line))
+				
+			)
+		)
+
+		(entmod line)
 		
 		;print info
 		; (princ "\n")
