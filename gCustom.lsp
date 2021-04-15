@@ -12,7 +12,7 @@
 	(princ)
 )
 
-(defun C:gexphalf (/ ss n segs startPoint)
+(defun C:gseg (/ ss n segs startPoint)
 	(setq ss (ssget '((0 . "LINE,POLYLINE,LWPOLYLINE,ARC,CIRCLE")))
 		n (1- (sslength ss))
 	)
