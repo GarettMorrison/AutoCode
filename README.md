@@ -12,7 +12,7 @@ Split all selected polylines into segments and explode them individually. Will s
 ### gseg
 Split all polylines into segments, but not explode, so you can alter more easily before exploding
 
-## gext
+### gext
 Will extend all selected segments to the given length, useful for smoothing
 
 ### gminext
