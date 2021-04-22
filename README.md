@@ -1,4 +1,4 @@
-## This is my set of useful or interesting Autocad scripts
+## Homemade useful or interesting Autocad scripts
 
 ### AutoLisp_Tools
 A set of tools for for processing files for laser cutting
