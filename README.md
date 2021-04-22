@@ -1,14 +1,9 @@
 ## This is my set of useful or interesting Autocad scripts
 
-<<<<<<< HEAD
-### AutoLisp_Tools ### which is primarily useful for processing files for laser cutting
-### There is also SpiralGen, which a cool bit of pattern generation using autocad. 
-=======
 ### AutoLisp_Tools
 A set of tools for for processing files for laser cutting
 ### SpiralGen
 A cool bit of pattern generation using autocad. 
->>>>>>> b3cc24b10a0f8f3e8725f1ca73b8a1416635a73d
 
  
 
