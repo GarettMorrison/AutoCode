@@ -1,2 +1,4 @@
 DIVCUT_MESCUT.lsp
 dissection.lsp
+*.dwg
+!SpiralGen/out/*.json
