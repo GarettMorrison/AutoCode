@@ -4,4 +4,4 @@ neat_output/
 *.dxf
 !SpiralGen/Examples/*.dxf
 *.dwg
-!SpiralGen/xamples/*.dwg
+!SpiralGen/Examples/*.dwg
