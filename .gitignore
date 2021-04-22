@@ -1,4 +1,6 @@
 DIVCUT_MESCUT.lsp
 dissection.lsp
+*.dxf
+!SpiralGen/examples/*.dxf
 *.dwg
-!SpiralGen/out/*.json
+!SpiralGen/examples/*.dwg
