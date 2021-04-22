@@ -1,13 +1,22 @@
 ## This is my set of useful or interesting Autocad scripts
 
+<<<<<<< HEAD
 ### AutoLisp_Tools ### which is primarily useful for processing files for laser cutting
 ### There is also SpiralGen, which a cool bit of pattern generation using autocad. 
+=======
+### AutoLisp_Tools
+A set of tools for for processing files for laser cutting
+### SpiralGen
+A cool bit of pattern generation using autocad. 
+>>>>>>> b3cc24b10a0f8f3e8725f1ca73b8a1416635a73d
+
+ 
+
+## AutoLisp_Tools Functions
 
 Some CNC software handles polyines really slowly, especially the one I use regularly: UCP (Universal Control Panel from Universal Laser Systems). As it divides up curves into an arbitrarily large number of segments, it will take 2-3 times as long as it needs to doing tiny precise motions. I was originally just looking for a single command to break polylines into segments, but things got kind of out of hand, and now I have a small suite of custom tools. 
 
-Load with (load "s"). You will have to place files in a location in AutoCAD's search path, or make a new one. 
-
-## Functions
+Load with (load "s"). You will have to place files in a location in AutoCAD's search path, or make a new one.
 
 ### gexp
 Split all selected polylines into segments and explode them individually. Will slightly reduce resolution of cut but \~double speed.
