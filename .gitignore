@@ -1,6 +1,6 @@
 DIVCUT_MESCUT.lsp
 dissection.lsp
-neat_output/
+neat_output
 *.dxf
 !SpiralGen/Examples/*.dxf
 *.dwg
