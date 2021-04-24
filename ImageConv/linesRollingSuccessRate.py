@@ -15,21 +15,24 @@ startTime = time.time()
 # Line (X, Y, theta)
 # Route (X, Y, Theta, Score)
 
-#Big Vars
-lineRadius = 10
-lineWeight = 0.3
+runAvg = (0,0)
 
-quickSaveTick = 50
+#Big Vars
+lineRadius = 5
+lineWeight = 0.1
+
+quickSaveTick = 100
 
 #For each line gen
-initialLines = 0
-tweakingLines = 0
-tweakingDegrees = 0
+bigScoreInc = 0.8
+smallScoreInc = 0.1
+scoreDeIncrement = 0.05
 
-lineCount = 5000
+lineCount = 1000
 
-#Calculated Consts
-weightFactor = -m.log(255 * lineWeight) / lineRadius
+#Calculated globals
+tAvgPix = 0
+iAvgPix = 0
 
 #Start geometry functions
 def cos(inputVal):
@@ -78,21 +81,27 @@ def pointLineDist(line, p): #Get Dist from line to point
 	dist = abs(dist)
 	return(dist)
 
+#Autocad Functions
+def convertCAD(p):
+	pout = (p[0], p[1] * -1)
+	return(pout)
+
+
 #Start image functions
 def getPix(p, inPix, size): #Compare value and point to image, return -1 if OOB
-	iH, iW = size
+	iW, iH = size
 	if 0 <= p[0] < iW and 0 <= p[1] < iH:
 		return(inPix[p])
 	return(-1)
 
 def compPix( p, val, inPix, size): #Compare value and point to image, return -1 if OOB
-	iH, iW = size
+	iW, iH = size
 	if 0 <= p[0] < iW and 0 <= p[1] < iH:
 		return(abs(inPix[p]  - val))
 	return(-1)
 
 def setPix(p, val, inPix, size): #Set pixel val, return false if fail
-	iH, iW = size
+	iW, iH = size
 
 	val = m.floor(cap(val, 0, 255))
 	if 0 <= p[0] < iW and 0 <= p[1] < iH:
@@ -100,10 +109,13 @@ def setPix(p, val, inPix, size): #Set pixel val, return false if fail
 		return(True)
 	return(False)
 
-#Autocad Functions
-def convertCAD(p):
-	pout = (p[0], p[1] * -1)
-	return(pout)
+def getImgAvg(inPix, size):
+	count = size[0] * size[1]
+	sumVals = 0
+	for i in range(size[0]):
+		for j in range(size[1]):
+			sumVals += inPix[i,j]
+	return(sumVals/count)
 
 
 def addPixChange(p, val, inSum, pixCount, inPix, tPix, size): #Calculate diff between actual and changed val
@@ -114,7 +126,10 @@ def addPixChange(p, val, inSum, pixCount, inPix, tPix, size): #Calculate diff be
 		return(inSum, pixCount)
 
 	inVal = getPix(p, inPix, size)
-	diff =  abs(inVal - baseVal) - abs(inVal - val)
+
+	global tAvgPix
+	global iAvgPix
+	diff =  abs(inVal*iAvgPix - baseVal*iAvgPix) - abs(inVal*iAvgPix - val*iAvgPix)
 
 	# print("Diff: " + str(diff) + " " + str(baseVal) + " " + str(inVal))
 
@@ -125,7 +140,9 @@ def addPixChange(p, val, inSum, pixCount, inPix, tPix, size): #Calculate diff be
 		sign = -1
 
 	outS = 0
-	if diff < 8:
+	if diff < 2:
+		outS = 0
+	elif diff < 8:
 		outS = 1
 	elif diff < 16:
 		outS = 2
@@ -135,9 +152,8 @@ def addPixChange(p, val, inSum, pixCount, inPix, tPix, size): #Calculate diff be
 		outS = 4
 	elif diff < 128:
 		outS = 5
-
-	if inVal == 255:
-		outS = -2
+	else:
+		outS = 6
 
 	inSum += outS * sign
 	pixCount += 1
@@ -148,21 +164,24 @@ def addPixChange(p, val, inSum, pixCount, inPix, tPix, size): #Calculate diff be
 	inSum += diff
 	return(inSum)
 
-
 def newPixVal(line, pTemp, tPix, size):
 	outVal = 0
 	dist = pointLineDist(line, pTemp)
-	change = m.floor(255*lineWeight * m.exp(dist * weightFactor))
+
+	# change = m.floor(255*lineWeight/2 + lineWeight * ((lineRadius/0.707) - dist) / (2 * (lineRadius/0.707)))
+	maxRad = (lineRadius/0.707)
+
+	change = m.floor(255 * lineWeight * (maxRad - dist)/maxRad)
 
 	baseVal = getPix(pTemp, tPix, size)
-	if baseVal != -1:
+	if baseVal != -1: #If in bounds do
 		outVal = cap(baseVal - change, 0, 255)
 
 	return outVal
 
 def checkLine(line, inPix, tPix, size): #Check drawing line
 	#Load image info
-	iH, iW = size
+	iW, iH = size
 
 	
 	score = 0
@@ -188,7 +207,12 @@ def checkLine(line, inPix, tPix, size): #Check drawing line
 
 	if line[2] % 90 == 0 or line[2] == 0:
 		score -= 99999999999 #Parralel to boundary lines bad
-	score /= (pixCount + 15) #Addition to prevent tiny lines
+
+	if getLinePt(line, 0, True) == 0 or getLinePt(line, 0, False) == 0:
+		score -= 99999999999 #Parralel to boundary lines bad
+
+	score /= (pixCount + 15) #Add 15 to prevent tiny lines
+
 	return(score)
 
 
@@ -201,7 +225,7 @@ def drawLine(line, tPix, size): #Check drawing line
 
 	#Load image info
 
-	iH, iW = size
+	iW, iH = size
 
 	basePoint = line[:2]
 	maxDist = 0
@@ -291,7 +315,7 @@ except IOError:
 	sys.exit(1)
 
 size = inImg.size
-iH, iW = size
+iW, iH = size
 iPix = inImg.load()
 
 #Make new image to experiment on
@@ -324,7 +348,6 @@ msp.add_line((iW,-1*iH), (0,-1*iH), dxfattribs={'layer': 'Border'})
 # 	base.append()
 
 
-
 print("iW (width): " + str(iW))
 print("iH (height): " + str(iH))
 
@@ -339,13 +362,15 @@ endPoint = (0,m.floor(iH/2))
 line = (0,0,0)
 
 #Actually run through procedural generator
-scoreGoal = 2.1
+scoreGoal = 3
 for i in range(lineCount):
 	startPoint = endPoint
+	score = 0
 
-	# print("Rand")
 	#Run some random lines
 	initialBest = (0,0,0,0) #index 3 is score
+	tests = 0
+	scoreGoal += bigScoreInc
 	while True:
 		theta = r.randint(0, 18000)/100
 		# print(theta, end = " ")
@@ -354,16 +379,17 @@ for i in range(lineCount):
 		if score > initialBest[3]:
 			initialBest = line + (score,)
 
-		if score > scoreGoal:
+		tests += 1
+		if initialBest[3] > scoreGoal:
 			break
-		scoreGoal -= 0.05
+		scoreGoal -= scoreDeIncrement
 
-	scoreGoal += 1.1
+	
 
 	# print("Tweak")
 	#Run some tweaked lines from the best big one
 	lineBest = initialBest
-	scoreGoal = 0
+	scoreGoal += smallScoreInc
 	while True:
 		theta = r.randint(0,300)/60
 		line = startPoint + (theta,)
@@ -371,21 +397,14 @@ for i in range(lineCount):
 		if score > lineBest[3]:
 			lineBest = line + (score,)
 
+		tests += 1
 		if score > scoreGoal:
+			# print(str(score) + "  -  " + str(scoreGoal))
 			break
-		scoreGoal -= 0.05
-
-	scoreGoal += 0.75
-
-		# print("------Line: " + str(line) + " Score: " + str(score))
+		scoreGoal -= scoreDeIncrement
 
 
-	lineBest = initialBest
-
-
-
-
-	print(("Count: " + str(i+1) + '/' + str(lineCount)).ljust(18) + " Line: " + str(lineBest[0])[:6].ljust(6) + " " + str(lineBest[1])[:6].ljust(6) + " "+ str(lineBest[2])[:6].ljust(6) + " Score: " + str(lineBest[3]) )
+	print(("Count: " + str(i+1) + '/' + str(lineCount)).ljust(18) + " Line: " + str(lineBest[0])[:6].ljust(6) + " " + str(lineBest[1])[:6].ljust(6) + " "+ str(lineBest[2])[:6].ljust(6) + " Tests: " + str(tests).ljust(4) + " Score: " + str(lineBest[3]) )
 
 	#Best line picked, now to output
 	#Draw line on image
@@ -396,6 +415,11 @@ for i in range(lineCount):
 
 	#Print line to file
 	fileOut.write(str(startPoint[0]) + "," + str(startPoint[1]) + "," + str(endPoint[0]) + "," + str(endPoint[1]) + "," + str(lineBest[3]) + "\n")
+
+	if i % 10 == 0:
+		iAvgPix = getImgAvg(iPix, size)
+		tAvgPix = getImgAvg(tPix, size)
+		# print(str(iAvgPix) + " - " + str(tAvgPix))
 
 	if i%20 == 0 and i > 10: #Print time estimate
 		currTime = time.time()
@@ -426,12 +450,13 @@ totalTime = endTime - startTime
 metadata = ()
 metadata += (("lineCount", str(lineCount)), )
 metadata += (("lineRadius", str(lineRadius)), )
-metadata += (("lineWeight", str(lineWeight)), )
-metadata += (("initialLines", str(initialLines)), )
-metadata += (("tweakingLines", str(tweakingLines)), )
-metadata += (("tweakingDegrees", str(tweakingDegrees)), )
+metadata += (("scoreDeIncrement", str(scoreDeIncrement)), )
+metadata += (("bigScoreInc", str(bigScoreInc)), )
+metadata += (("smallScoreInc", str(smallScoreInc)), )
 metadata += (("quickSaveTick", str(quickSaveTick)), )
 metadata += (("totalTime", str(totalTime)), )
+
+
 
 for i in metadata:
 	fileOut.write(i[0] + "," + i[1] + "\n")
@@ -468,3 +493,12 @@ print("--------------------")
 # #  	endpoint = topInter
 # # elif 0 <= botInter[0] < iW and botInter != startPoint:
 # #  	endpoint = botInter
+
+
+
+
+
+#Get running average of something
+# global runAvg
+# runAvg = ((runAvg[0]*runAvg[1]+j)/(runAvg[1]+1), runAvg[1]+1)
+# print(runAvg)
