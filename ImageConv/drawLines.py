@@ -17,13 +17,13 @@ startTime = time.time()
 
 #Big Vars
 lineRadius = 10
-lineWeight = 0.5
+lineWeight = 0.25
 
 quickSaveTick = 50
 
 #For each line gen
-initialLines = 30
-tweakingLines = 10
+initialLines = 40
+tweakingLines = 15
 tweakingDegrees = 0.5
 
 lineCount = 100
@@ -377,26 +377,31 @@ for i in range(lineCount):
 	print(("Count: " + str(i+1) + '/' + str(lineCount)).ljust(18) + " Line: " + str(lineBest[0])[:6].ljust(6) + " " + str(lineBest[1])[:6].ljust(6) + " "+ str(lineBest[2])[:6].ljust(6) + " Score: " + str(lineBest[3]) )
 
 	#Best line picked, now to output
-	#Draw on image
+	#Draw line on image
 	endPoint = drawLine(lineBest, tPix, size)
 
-	#Print to dxf
+	#Print line to dxf
 	msp.add_line(convertCAD(startPoint), convertCAD(endPoint), dxfattribs={'layer': 'Sketch'})
 
-	#Print to file
+	#Print line to file
 	fileOut.write(str(startPoint[0]) + "," + str(startPoint[1]) + "," + str(endPoint[0]) + "," + str(endPoint[1]) + "," + str(lineBest[3]) + "\n")
 
-	if i%20 == 0 and i > 20:
+	if i%20 == 0 and i > 10: #Print time estimate
 		currTime = time.time()
 		timeEst = (currTime - startTime) * (lineCount - i)/i
-		print("Estimated Time Remaining: " + str(timeEst) + " seconds")
+		print("TODO: " + str(lineCount - i) + " lines in ", end = "")
+		if timeEst/60 > 1:
+			print(str(m.floor(timeEst/60)) + " minutes ", end = '')
+		print(str(timeEst%60)[:4] + " seconds.")
 
-	if i % quickSaveTick == 0:
+	if i % quickSaveTick == 0: #Save current file formate
 		tImg.save("dump/" + outString + str(i) + ".png")
 		doc.saveas("dump/" + outString + str(i) + ".dxf")
 		#Close and reopen in case of crash
 		fileOut.close()
 		fileOut = open("out/" + outString + ".txt", "a")
+
+
 
 #Save files
 tImg.save("out/" + outString + ".png")
