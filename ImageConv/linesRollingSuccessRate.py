@@ -18,14 +18,14 @@ startTime = time.time()
 runAvg = (0,0)
 
 #Big Vars
-lineRadius = 5
-lineWeight = 0.1
+lineRadius = 3
+lineWeight = 0.2
 
-quickSaveTick = 100
+quickSaveTick = 99
 
 #For each line gen
-bigScoreInc = 0.8
-smallScoreInc = 0.1
+bigScoreInc = 1.5
+smallScoreInc = 0.2
 scoreDeIncrement = 0.05
 
 lineCount = 1000
@@ -292,8 +292,6 @@ def drawLine(line, tPix, size): #Check drawing line
 
 
 #End Function Definitions
-
-
 
 #Find output string
 outString = "output_"
