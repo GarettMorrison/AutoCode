@@ -18,7 +18,7 @@ startTime = time.time()
 runAvg = (0,0)
 
 #Big Vars
-lineRadius = 3
+lineRadius = 4
 lineWeight = 0.2
 
 quickSaveTick = 99
@@ -28,7 +28,7 @@ bigScoreInc = 1.5
 smallScoreInc = 0.2
 scoreDeIncrement = 0.05
 
-lineCount = 1000
+lineCount = 10000
 
 #Calculated globals
 tAvgPix = 0

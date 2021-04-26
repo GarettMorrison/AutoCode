@@ -18,13 +18,17 @@ startTime = time.time()
 runAvg = (0,0)
 
 #Big Vars
-minDist = 0
-maxDist = 8
+doInvert = 1
+minDist = 5
+maxDist = 40
 
-quickSaveTick = 50000
+skipPixFactor = 4.873
+
+quickSaveTick = 100000
 
 #Big calc vals
 maxColor = 0
+minColor = 0
 
 #Start geometry functions
 def cos(inputVal):
@@ -122,14 +126,19 @@ def getImgAvg(inPix):
 			sumVals += inPix[i,j]
 	return(sumVals/count)
 
-def getImgMax(inPix):
+def getImgRange(inPix):
 	global size
+	global maxVal
+	global minVal
 	maxVal = 0
+	minVal = 0
 	for i in range(size[0]):
 		for j in range(size[1]):
 			if inPix[i,j] > maxVal:
 				maxVal = inPix[i,j]
-	return(maxVal)
+			if inPix[i,j] < minVal:
+				minVal = inPix[i,j]
+	return(minVal, maxVal)
 
 def getClosestDist(pos, inPix, doPrint = False):
 	global size
@@ -244,11 +253,12 @@ print("Autocad saving to: " + "out/" + outString + ".dxf")
 print("Log saving to:     " + "out/" + outString + ".txt")
 
 print("Starting Run")
+startLoopTime = time.time()
 
 
 #Test points
-testPix = (50,10)
-pos = (100, 100)
+# testPix = (50,10)
+# pos = (100, 100)
 
 # tPix[testPix] = 0
 # r = getClosestDist(pos, tPix, True)
@@ -258,21 +268,27 @@ pos = (100, 100)
 
 
 #Set inits
-maxColor = getImgMax(tPix)
+minColor, maxColor = getImgRange(tPix)
 tPix[0,0] = 0
 pos = (0,0)
-checkPix = 1
-
+checkPix = 0
+placePix = 0
+currTime = time.time()
+skipIterator = 0
 #Actually run through procedural generator
 while True:
 	#Get pixel
-	pos = (pos[0]-1, pos[1]+1)
+	while skipIterator < skipPixFactor: #Skiup multiple pix sometimes
+		pos = (pos[0]-1, pos[1]+1)
+		checkPix += 1
+		skipIterator += 1
+	skipIterator -= skipPixFactor #Is intentionally weird to prevent pattern emergence
 
 
-	if pos[0] < 0: #If over left or bottom bound
-		pos = (pos[1] + pos[0] + 1, 0)
 
-	while (pos[1] >= iH) or (pos[1] < 0):
+	while (pos[1] >= iH) or (pos[1] < 0) or (pos[0] < 0):
+		if pos[0] < 0: #If over left bound
+			pos = (pos[1] + pos[0] + 1, 0)
 		if pos[1] >= iH: #If over bottom bound
 			pos = (pos[1] + pos[0] + 1, 0)
 		if pos[0] >= iW: #If over right bound
@@ -281,16 +297,17 @@ while True:
 		if pos[1] >= iH:
 			break
 
-	if pos[1] >= iH: #Out of pixels and out of time
+	if pos[1] >= iH: #Out of pixels
 		break
 
 	#pos is secured
 	dist = getClosestDist(pos, tPix)
 	inVal = getPix(pos, iPix)
-	targetDist = mapToRange(inVal, (maxColor, 0), (minDist, maxDist))
+	targetDist = doInvert * mapToRange(inVal, (minColor, maxColor), (minDist, maxDist))
 
 	#If pixel should be placed
 	if dist > targetDist:
+		placePix += 1
 		setPix(pos, 0, tPix)
 		msp.add_point(convertCAD(pos), dxfattribs={'layer': 'Sketch'})
 
@@ -305,10 +322,10 @@ while True:
 
 
 	#Do periodic ifs
-	if checkPix % m.floor(quickSaveTick/5) == 0 and checkPix > 10: #Print time estimate
+	if time.time() - currTime > 4: #Print time estimate
 		currTime = time.time()
-		timeEst = (currTime - startTime) * (totalPix - checkPix)/checkPix
-		print(str(round(100*checkPix/totalPix, 2)) + "% done, " + str(totalPix - checkPix) + "/" + str(totalPix) + " pixels, est ", end = "")
+		timeEst = (currTime - startLoopTime) * (totalPix - checkPix)/checkPix
+		print(str(round(100*checkPix/totalPix, 2)) + "% done, " + str(checkPix) + "/" + str(totalPix) + " pixels, est ", end = "")
 		if timeEst/60 > 1:
 			print(str(m.floor(timeEst/60)) + " minutes ", end = '')
 		print(str(timeEst%60)[:4] + " seconds.")
@@ -317,10 +334,9 @@ while True:
 		tImg.save("dump/" + outString + str(checkPix) + ".png")
 		doc.saveas("dump/" + outString + str(checkPix) + ".dxf")
 		#Close and reopen in case of crash
-		fileOut.close()
-		fileOut = open("out/" + outString + ".txt", "a")
+		# fileOut.close()
+		# fileOut = open("out/" + outString + ".txt", "a")
 
-	checkPix += 1
 	#End big loop
 
 
@@ -340,10 +356,15 @@ totalTime = endTime - startTime
 
 #Write metadata
 metadata = ()
-metadata += (("totalPix", str(totalPix)),)
+metadata += (("placePix", str(placePix)),)
+metadata += (("doInvert", str(doInvert)),)
+metadata += (("skipPixFactor", str(skipPixFactor)),)
 metadata += (("maxColor", str(maxColor)),)
+metadata += (("minColor", str(minColor)),)
 metadata += (("minDist", str(minDist)),)
 metadata += (("maxDist", str(maxDist)),)
+metadata += (("totalPix", str(totalPix)),)
+metadata += (("checkPix", str(checkPix)),)
 metadata += (("quickSaveTick", str(quickSaveTick)),)
 metadata += (("totalTime", str(totalTime)),)
 
@@ -359,10 +380,10 @@ print("Info----------------")
 for i in metadata:
 	print(i[0] + ": " + i[1])
 print("--------------------")
-print("PureData-----------")
-for i in metadata:
-	print(i[1])
-print("--------------------")
+# print("PureData-----------")
+# for i in metadata:
+# 	print(i[1])
+# print("--------------------")
 
 
 
