@@ -18,17 +18,42 @@ startTime = time.time()
 runAvg = (0,0)
 
 #Big Vars
-doInvert = 1
-minDist = 5
-maxDist = 40
+doInvert = 1 #1 inverts, 0 doesnt
+skipWhite = 0 #1 does, 0 doesnt
+minDist = 7
+maxDist = 50
 
-skipPixFactor = 4.873
+skipPixFactor = 70.2739
 
 quickSaveTick = 100000
+
+# connectDots = 0 #Set to 0 to ignore
+# minAngConnect = 0 #Set to 0 to ignore
 
 #Big calc vals
 maxColor = 0
 minColor = 0
+
+
+#Arguments
+outString = ""
+try:
+	outString = sys.argv[1]
+except:
+	outString = "output"
+
+try:
+	os.mkdir("out/" + outString)
+except:
+	print("Error: Output Folder out/" + outString + " already exists")
+	sys.exit()
+
+
+# connectDots = 0
+# try:
+# 	connectDots = int(sys.argv[2])
+# except:
+# 	connectDots = 0
 
 #Start geometry functions
 def cos(inputVal):
@@ -90,8 +115,8 @@ def pointLineDist(line, p): #Get Dist from line to point
 	return(dist)
 
 #Autocad Functions
-def convertCAD(p):
-	pout = (p[0], p[1] * -1)
+def convertCAD(p, yMod = 0, xMod = 0):
+	pout = (p[0] + xMod, p[1] * -1 + yMod)
 	return(pout)
 
 
@@ -174,6 +199,76 @@ def getClosestDist(pos, inPix, doPrint = False):
 		r += 1
 	#End of function, will run infinitely with no pixels to find
 
+
+
+def getClosestPts(pos, inPix, getPts = 1, minAng = 0, doPrint = False):
+	global size
+	minRs = () #Set large, so anything is preferable.
+	minPts = () #Set large, so anything is preferable.
+
+	r = 1
+	doLoop = True
+	while doLoop:
+		# print("\n" + str(r))
+		for i in range(-1*r +1, r+1):
+			# print(i, end = " ")
+			checkPt = (r + pos[0],i + pos[1])
+			if checkPt[0] > size[0] and checkPt[1] > size[1]:
+				doLoop = False
+
+			checkPts = ()
+			checkPts += ((   r + pos[0],    i + pos[1]), )#Right -up
+			checkPts += ((-1*r + pos[0], -1*i + pos[1]), )#Left-down
+			checkPts += ((-1*i + pos[0],    r + pos[1]), )#Top -left
+			checkPts += ((   i + pos[0], -1*r + pos[1]), )#Bot-right
+
+			# check += (getPix((   r + pos[0],    i + pos[1]), inPix) in (-1, 255, 100))#Right -up
+			# check += (getPix((-1*r + pos[0], -1*i + pos[1]), inPix) in (-1, 255, 100))#Left-down
+			# check += (getPix((-1*i + pos[0],    r + pos[1]), inPix) in (-1, 255, 100))#Top -left
+			# check += (getPix((   i + pos[0], -1*r + pos[1]), inPix) in (-1, 255, 100))#Bot-right
+
+
+			#Print search area for debugging
+			if doPrint:
+				setPix((   r + pos[0],    i + pos[1]), 100, inPix)
+				setPix((-1*r + pos[0], -1*i + pos[1]), 100, inPix)
+				setPix((-1*i + pos[0],    r + pos[1]), 100, inPix)
+				setPix((   i + pos[0], -1*r + pos[1]), 100, inPix)
+
+			for pt in checkPts:
+				if not (getPix(pt, inPix) in (-1, 255, 100)): #If pt exists
+					checkR = getDist(pos, pt)
+					minPts = minPts	+ (pt,)
+					minRs = minRs + (checkR,)
+					# print(str(checkPt) + " " + str(minPts))
+
+		
+		foundCount = 0
+		for i in minRs:
+			if i < r:
+				foundCount += 1
+
+		if foundCount >= getPts: #Found enough points
+			doLoop = False
+		# else: #Not have expRange var
+		# 	if (foundCount)*r >= getPts*expRange:
+		# 		doLoop = False
+
+		r += 1
+
+
+	#Get actual outputs
+	outPts = ()
+	for i in range(len(minRs)):#Save good points
+		if minRs[i] < r:
+			outPts = outPts + (minPts[i],)
+
+	return(outPts)
+
+	#End of function, will run infinitely with no pixels to find
+
+
+
 #End Function Definitions
 
 
@@ -186,15 +281,20 @@ def getClosestDist(pos, inPix, doPrint = False):
 
 
 #Find output string
-outString = "output_"
-i = 0
-while  os.path.exists("out/" + outString + str(i) + ".dxf"):
-	i+=1
-outString = outString + str(i) 
+# i = 0
+# while  os.path.exists("out/" + outString + str(i) + ".dxf"):
+# 	i+=1
+# outString = outString + str(i) 
 
 
-#Make output file
-fileOut = open("out/" + outString + ".txt", "w")
+#Make output filenames
+infoOutString = "out/" + outString + "/info.txt"
+dxfOutString = "out/" + outString + "/dots.dxf"
+imgOutString = "out/" + outString + "/dots.png"
+imgOrigOutString = "out/" + outString + "/input.png"
+
+#Load output string
+fileOut = open(infoOutString, "w")
 
 #Load input Image
 try:
@@ -225,16 +325,16 @@ msp = doc.modelspace()
 doc.layers.new(name='Sketch', dxfattribs={'linetype': 'CONTINUOUS', 'color': 1})
 doc.layers.new(name='Border', dxfattribs={'linetype': 'CONTINUOUS', 'color': 2})
 #Make Border
-msp.add_line((0,0), (0,-1*iH), dxfattribs={'layer': 'Border'})
+
+
 msp.add_line((0,0), (iW,0), dxfattribs={'layer': 'Border'})
-msp.add_line((iW,0), (iW,-1*iH), dxfattribs={'layer': 'Border'})
-msp.add_line((iW,-1*iH), (0,-1*iH), dxfattribs={'layer': 'Border'})
+msp.add_line((0,0), (0,iH), dxfattribs={'layer': 'Border'})
+msp.add_line((iW,0), (iW,iH), dxfattribs={'layer': 'Border'})
+msp.add_line((iW,iH), (0,iH), dxfattribs={'layer': 'Border'})
 
 
 #Done with setup
 #We have loaded an input image and initialized an output dxf and image
-
-
 
 
 #Vars
@@ -248,17 +348,15 @@ print("iW (width): " + str(iW))
 print("iH (height): " + str(iH))
 
 print("Saveing to:        " + "out/" + outString)
-print("Image saving to:   " + "out/" + outString + ".png")
-print("Autocad saving to: " + "out/" + outString + ".dxf")
-print("Log saving to:     " + "out/" + outString + ".txt")
+print("Image saving to:   " + imgOutString)
+print("Autocad saving to: " + dxfOutString)
+print("Info saving to:    " + infoOutString)
 
 print("Starting Run")
-startLoopTime = time.time()
 
 
 #Test points
 # testPix = (50,10)
-# pos = (100, 100)
 
 # tPix[testPix] = 0
 # r = getClosestDist(pos, tPix, True)
@@ -266,14 +364,31 @@ startLoopTime = time.time()
 # print("-------------------------------- ", end = "")
 # print(r)
 
+# pos = (10, 10)
+# tPix[20,20] = 0
+# tPix[30,30] = 0
+# tPix[40,40] = 0
+# tPix[50,50] = 0
+# tPix[60,60] = 0
+# tPix[70,70] = 0
+# print("----------------------")
+# for i in range(8):
+# 	print(str(i) + " " + str(getClosestPts(pos, tPix, getPts = i)))
+# print("----------------------")
+
+
 
 #Set inits
-minColor, maxColor = getImgRange(tPix)
+colorRange = getImgRange(tPix)
+if doInvert: #Invert image during runtime
+	colorRange = (colorRange[1], colorRange[0])
+
 tPix[0,0] = 0
 pos = (0,0)
 checkPix = 0
 placePix = 0
-currTime = time.time()
+startLoopTime = time.time()
+currTime = startLoopTime
 skipIterator = 0
 #Actually run through procedural generator
 while True:
@@ -301,54 +416,116 @@ while True:
 		break
 
 	#pos is secured
-	dist = getClosestDist(pos, tPix)
 	inVal = getPix(pos, iPix)
-	targetDist = doInvert * mapToRange(inVal, (minColor, maxColor), (minDist, maxDist))
+	if skipWhite and inVal == 255:
+		continue
+	dist = getClosestDist(pos, tPix)
+
+
+	distRange = (minDist, maxDist)
+	targetDist = mapToRange(inVal, colorRange, distRange)
 
 	#If pixel should be placed
 	if dist > targetDist:
 		placePix += 1
 		setPix(pos, 0, tPix)
-		msp.add_point(convertCAD(pos), dxfattribs={'layer': 'Sketch'})
-
-
-	
-
-
-
-
-
-
-
-
+		msp.add_point(convertCAD(pos, yMod = iH), dxfattribs={'layer': 'Sketch'})
 	#Do periodic ifs
-	if time.time() - currTime > 4: #Print time estimate
+	if time.time() - currTime > 0.5: #Print time estimate
 		currTime = time.time()
 		timeEst = (currTime - startLoopTime) * (totalPix - checkPix)/checkPix
-		print(str(round(100*checkPix/totalPix, 2)) + "% done, " + str(checkPix) + "/" + str(totalPix) + " pixels, est ", end = "")
+		print(str(round(100*checkPix/totalPix, 2)).rjust(4) + "% done, Placed|Checked|Total" + str(placePix).rjust(m.floor(m.log(totalPix, 10))) + "|" + str(checkPix).rjust(m.floor(m.log(totalPix, 10))) + "|" + str(totalPix).rjust(m.floor(m.log(totalPix, 10))) + " est ", end = "")
 		if timeEst/60 > 1:
 			print(str(m.floor(timeEst/60)) + " minutes ", end = '')
 		print(str(timeEst%60)[:4] + " seconds.")
 
 	if checkPix % quickSaveTick == 0: #Save current file formate
-		tImg.save("dump/" + outString + str(checkPix) + ".png")
-		doc.saveas("dump/" + outString + str(checkPix) + ".dxf")
+		tImg.save("dump/" + outString + "_" + str(checkPix) + ".png")
+		doc.saveas("dump/" + outString + "_" + str(checkPix) + ".dxf")
 		#Close and reopen in case of crash
 		# fileOut.close()
 		# fileOut = open("out/" + outString + ".txt", "a")
 
 	#End big loop
+pointTime = time.time() - startLoopTime
 
 
 
 
 
 
+
+
+
+# pixConnected = 0
+# linesDrawn = 0
+# connectTime = 0
+# #Connect dots
+# if connectDots > 0:
+# 	print("Connecting Dots")
+# 	#Make outline
+# 	msp.add_line((0,0), (0,iH), dxfattribs={'layer': 'Border'})
+# 	msp.add_line((iW,0), (iW,iH), dxfattribs={'layer': 'Border'})
+# 	msp.add_line((iW,iH), (0,iH), dxfattribs={'layer': 'Border'})
+
+# 	#Add lines
+# 	#Init Vals
+# 	startLoopTime = time.time()
+# 	currTime = startLoopTime
+# 	pos = (0,0)
+# 	checkPix = 0
+# 	skipIterator = 0
+# 	doLoop = True
+
+# 	#Big loop
+# 	while doLoop:
+# 		#Get pixel
+# 		while skipIterator < skipPixFactor: #Skiup multiple pix sometimes
+# 			pos = (pos[0]-1, pos[1]+1)
+# 			checkPix += 1
+# 			skipIterator += 1
+# 		skipIterator -= skipPixFactor #Same pattern as start so should hit pix
+
+
+
+# 		while (pos[1] >= iH) or (pos[1] < 0) or (pos[0] < 0):
+# 			if pos[0] < 0: #If over left bound
+# 				pos = (pos[1] + pos[0] + 1, 0)
+# 			if pos[1] >= iH: #If over bottom bound
+# 				pos = (pos[1] + pos[0] + 1, 0)
+# 			if pos[0] >= iW: #If over right bound
+# 				pos = (iW -1, pos[0] -iW +1)
+
+# 			if pos[1] >= iH:
+# 				break
+
+# 		if pos[1] >= iH: #Out of pixels
+# 			doLoop = False
+
+# 		if not (getPix(pos, tPix) in (-1, 255, 100)): #Pixel black
+# 			pixConnected += 1
+# 			points = getClosestPts(pos, tPix, getPts = connectDots, minAng = minAngConnect)
+# 			# print(str(pos) + ", " + str(points))
+# 			for pt in points:
+# 				linesDrawn += 1
+# 				msp.add_line(convertCAD(pos, yMod = iH), convertCAD(pt, yMod = iH), dxfattribs={'layer': 'Sketch'})
+
+
+# 		if time.time() - currTime > 4: #Print time estimate
+# 			currTime = time.time()
+# 			timeEst = (currTime - startLoopTime) * (placePix - pixConnected)/pixConnected
+# 			print(str(round(100*pixConnected/placePix, 2)) + "% done, " + str(pixConnected) + "/" + str(placePix) + " pixel connected, est ", end = "")
+# 			if timeEst/60 > 1:
+# 				print(str(m.floor(timeEst/60)) + " minutes ", end = '')
+# 			print(str(timeEst%60)[:4] + " seconds.")
+
+# 	connectTime = time.time() - startLoopTime
 
 
 #Save files
-tImg.save("out/" + outString + ".png")
-doc.saveas("out/" + outString + ".dxf")
+tImg.save(imgOutString)
+inImg.save(imgOrigOutString)
+doc.saveas(dxfOutString)
 
 #Get endtime
 endTime = time.time()
@@ -363,10 +540,17 @@ metadata += (("maxColor", str(maxColor)),)
 metadata += (("minColor", str(minColor)),)
 metadata += (("minDist", str(minDist)),)
 metadata += (("maxDist", str(maxDist)),)
+metadata += (("quickSaveTick", str(quickSaveTick)),)
+
 metadata += (("totalPix", str(totalPix)),)
 metadata += (("checkPix", str(checkPix)),)
-metadata += (("quickSaveTick", str(quickSaveTick)),)
+# if connectDots > 0:
+# 	metadata += (("linesDrawn", str(linesDrawn)),)
+
 metadata += (("totalTime", str(totalTime)),)
+# if connectDots > 0:
+# 	metadata += (("connectTime", str(connectTime)),)
+metadata += (("pointTime", str(pointTime)),)
 
 
 

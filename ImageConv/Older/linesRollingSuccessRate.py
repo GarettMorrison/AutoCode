@@ -294,11 +294,11 @@ def drawLine(line, tPix, size): #Check drawing line
 #End Function Definitions
 
 #Find output string
-outString = "output_"
-i = 0
-while  os.path.exists("out/" + outString + str(i) + ".dxf"):
-	i+=1
-outString = outString + str(i) 
+# outString = "output_"
+# i = 0
+# while  os.path.exists("out/" + outString + str(i) + ".dxf"):
+# 	i+=1
+# outString = outString + str(i) 
 
 
 #Make output file
