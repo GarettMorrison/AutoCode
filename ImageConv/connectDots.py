@@ -19,9 +19,9 @@ startTime = time.time()
 #Big Vars
 quickSaveTick = 100000
 
-connections = 3 #Set to 0 to ignore
+connections = 3
 minAngle = 45 #Set to 0 to ignore
-hexBuckSize = 100
+hexBuckSize = 100 #Set very large to ignore
 
 distCap = 1000 #set to -1 to ignore, but will make run way slower
 
@@ -356,6 +356,7 @@ msp.add_line((iW,iH), (0,iH), dxfattribs={'layer': 'Border'})
 #Done with setup
 #We have loaded an input image and initialized an output dxf
 
+print("Starting ConnectDots")
 print("iW (width): " + str(iW))
 print("iH (height): " + str(iH))
 

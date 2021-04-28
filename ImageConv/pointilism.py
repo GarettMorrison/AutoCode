@@ -19,11 +19,11 @@ runAvg = (0,0)
 
 #Big Vars
 doInvert = 1 #1 inverts, 0 doesnt
-skipWhite = 0 #1 does, 0 doesnt
-minDist = 7
-maxDist = 50
+skipWhite = 1 #1 does, 0 doesnt
+minDist = 4
+maxDist = 12
 
-skipPixFactor = 70.2739
+skipPixFactor = 25.2739
 
 quickSaveTick = 100000
 
@@ -343,7 +343,7 @@ msp.add_line((iW,iH), (0,iH), dxfattribs={'layer': 'Border'})
 # for i in range(15):
 # 	base.append()
 
-
+print("Starting Pointilism")
 print("iW (width): " + str(iW))
 print("iH (height): " + str(iH))
 
