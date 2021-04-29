@@ -19,10 +19,10 @@ startTime = time.time()
 #Big Vars
 quickSaveTick = 100000
 
-connections = 3
-minAngle = 0 #Set to 0 to ignore
+connections = 8
+minAngle = 10 #Set to 0 to ignore
 
-rollLineTarget = 20 #Set -1 to ignore
+rollLineTarget = -1 #Set -1 to ignore
 
 hexBuckSize = 150 #Set very large to ignore
 
@@ -399,7 +399,6 @@ rollingLen = rollLineTarget
 
 #Init Vals
 linesDrawn = 0
-connectTime = 0
 lastPrintTime = time.time()
 #Add lines
 for ptPos in range(len(dots)):
