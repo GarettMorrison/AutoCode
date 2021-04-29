@@ -20,10 +20,13 @@ startTime = time.time()
 quickSaveTick = 100000
 
 connections = 3
-minAngle = 45 #Set to 0 to ignore
-hexBuckSize = 100 #Set very large to ignore
+minAngle = 0 #Set to 0 to ignore
 
-distCap = 1000 #set to -1 to ignore, but will make run way slower
+rollLineTarget = 20 #Set -1 to ignore
+
+hexBuckSize = 150 #Set very large to ignore
+
+
 
 #Big calc vals
 startTime = time.time()
@@ -372,7 +375,7 @@ print("Loading Dots")
 #odd buckets are offset by 1/2, x has 1 extra bc of this
 hexBuck = (((),)*m.ceil(iH/hexBuckSize),)*m.ceil(iW/hexBuckSize +1)
 
-dotsConnected = 0
+dotsHandled = 0
 dots = ()
 for i in range(iW):
 	for j in range(iH):
@@ -380,7 +383,7 @@ for i in range(iW):
 		if not (getPix(pos, iPix) in (-1, 255, 100)):
 			by = m.floor(j/hexBuckSize)
 			bx = m.floor((i +0.5)/hexBuckSize)
-			dotsConnected += 1
+			dotsHandled += 1
 			dots += pos,
 			hexBuck = hexBuck = hexBuck[:bx] + (hexBuck[bx][:by] + (hexBuck[bx][by] + (pos,) ,) + hexBuck[bx][by +1:] ,) + hexBuck[bx +1:]
 
@@ -390,8 +393,9 @@ for i in range(iW):
 # 		print(str(len(hexBuck[jj][ii])).rjust(4), end = " ")
 # 	print(" ")
 
-print("Found " + str(dotsConnected) + " dots.")
+print("Found " + str(dotsHandled) + " dots.")
 
+rollingLen = rollLineTarget
 
 #Init Vals
 linesDrawn = 0
@@ -399,9 +403,8 @@ connectTime = 0
 lastPrintTime = time.time()
 #Add lines
 for ptPos in range(len(dots)):
-	t1 = time.time()
 	pt = dots[ptPos]
-	endPts = ()
+	t1 = time.time()
 
 	ptbx = m.floor(pt[0]/hexBuckSize)
 	ptby = m.floor(pt[1]/hexBuckSize)
@@ -417,6 +420,13 @@ for ptPos in range(len(dots)):
 	closeDots += returnIfInRange(hexBuck, (ptbx +ptboff -1, ptby +1), (len(hexBuck), len(hexBuck[0]))) #DL
 	closeDots += returnIfInRange(hexBuck, (ptbx +ptboff   , ptby +1), (len(hexBuck), len(hexBuck[0]))) #DR
 
+
+	#Data at this point in loop
+	#pos: input position
+	#endPts: sorted list of other points by dist, (X, Y, ang, dist)
+
+	#Sort into array by dist
+	endPts = ()
 	for endPt in closeDots:
 		if pt == endPt: #Dont examine same point
 			continue
@@ -429,50 +439,56 @@ for ptPos in range(len(dots)):
 			if dist < endPts[i][3]:
 				bestPos = i
 				break
-		# t3 = time.time()
-		# addToAvg(t3 -t2, 1)
-
 		endPts = endPts[:bestPos] + ((endPt + (ang, dist)), ) + endPts[bestPos:]
 
-	#Data at this point in loop
-	#pos: input position
-	#endPts: sorted list of other points by dist, (X, Y, ang, dist)
-
-	#Loop until lines have been found and drawn that meet conditions
-	endLoop = False
-	for tempCon in range(connections, 0, -1): #loop with decreasing
-		for i in range(len(endPts) -tempCon):
-			goodRange = True
-
-			for p1 in range(i, i +tempCon -1): #Loop through every pair in current range
-				for p2 in range(p1 +1, i +tempCon): 
-					diffAng = getDiffWrap(getAngle(pt, endPts[p1]), getAngle(pt, endPts[p2]), (0,360))
-					if minAngle > diffAng:
-						goodRange = False
-			if goodRange:
-				for j in range(i, i+tempCon):
-					linesDrawn += 1
-					outPt = endPts[j]
-					# outPt = getLinePt(pt + (outPt[2],), pt[0] + cos(outPt[2])*outPt[3]/3, True)
-					msp.add_line(convertCAD(pt, yMod = iH), convertCAD(outPt, yMod = iH), dxfattribs={'layer': 'Sketch'})
-
-				#Break out of whole loop
-				endLoop = True
+	#If doing rolling len then stop here
+	if rollLineTarget > 0:
+		for i in endPts:
+			if i[3] < rollingLen:
+				msp.add_line(convertCAD(pt, yMod = iH), convertCAD(i, yMod = iH), dxfattribs={'layer': 'Sketch'})
+				linesDrawn += 1
+				rollingLen -= i[3]
+			else:
 				break
-		if endLoop:
-			break
+		rollingLen += rollLineTarget
+
+	#No rolling len
+	else: 
+		#Loop until lines have been found and drawn that meet conditions
+		endLoop = False
+		for tempCon in range(connections, 0, -1): #loop with decreasing
+			for i in range(len(endPts) -tempCon):
+				goodRange = True
+
+				for p1 in range(i, i +tempCon -1): #Loop through every pair in current range
+					for p2 in range(p1 +1, i +tempCon): 
+						diffAng = getDiffWrap(getAngle(pt, endPts[p1]), getAngle(pt, endPts[p2]), (0,360))
+						if minAngle > diffAng:
+							goodRange = False
+				if goodRange:
+					for j in range(i, i+tempCon):
+						linesDrawn += 1
+						outPt = endPts[j]
+						# outPt = getLinePt(pt + (outPt[2],), pt[0] + cos(outPt[2])*outPt[3]/3, True)
+						msp.add_line(convertCAD(pt, yMod = iH), convertCAD(outPt, yMod = iH), dxfattribs={'layer': 'Sketch'})
+
+					#Break out of whole loop
+					endLoop = True
+					break
+			if endLoop:
+				break
 
 	
 
 	currTime = time.time()
-	if currTime - lastPrintTime > 5 and ptPos >0:
+	if currTime - lastPrintTime > 1 and ptPos >0:
 		lastPrintTime = currTime
-		print("Dot " + str(ptPos) + "/" + str(dotsConnected) + " time est ", end = "")
-		timeEst = (currTime - startTime)*((dotsConnected -ptPos)/ptPos)
+		print("Dot " + str(ptPos) + "/" + str(dotsHandled) + " time est ", end = "")
+		timeEst = (currTime - startTime)*((dotsHandled -ptPos)/ptPos)
 		if timeEst/60 > 1:
 			print(str(m.floor(timeEst/60)) + " minutes ", end = '')
 		print(str(timeEst%60)[:4] + " seconds.")
-		print(runAvgSet[0])
+		# print(runAvgSet[0])
 
 	t2 = time.time()
 	addToAvg(t2-t1, 0)
@@ -483,8 +499,18 @@ for ptPos in range(len(dots)):
 
 #Save files
 # tImg.save("out/" + outString + ".png")
-doc.saveas(dxfOutString)
-
+try:
+	doc.saveas(dxfOutString)
+except:
+	print(dxfOutString + " Taken")
+	i = 0
+	while True:
+		try:
+			doc.saveas(dxfOutString[:-4] + "_" + str(i) + ".dxf")
+			break
+		except:
+			print(dxfOutString[:-4] + "_" + str(i) + ".dxf" + " Taken")
+			i += 1
 #Get endtime
 endTime = time.time()
 totalTime = endTime - startTime
@@ -500,7 +526,7 @@ metadata = ()
 metadata += (("connections", str(connections)),)
 metadata += (("minAngle", str(minAngle)),)
 metadata += (("hexBuckSize", str(hexBuckSize)),)
-metadata += (("dotsConnected", str(dotsConnected)),)
+metadata += (("dotsHandled", str(dotsHandled)),)
 metadata += (("linesDrawn", str(linesDrawn)),)
 metadata += (("totalTime", str(totalTime)),)
 
