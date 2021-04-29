@@ -19,12 +19,15 @@ startTime = time.time()
 #Big Vars
 quickSaveTick = 100000
 
+#Values for angle based run
 connections = 8
 minAngle = 10 #Set to 0 to ignore
 
-rollLineTarget = -1 #Set -1 to ignore
+#Values for rolling sum run
+rollLineTarget = 20 #Sum added per point to line dists, Set -1 to ignore
+rollConstCost = 1 #Constant cost per line
 
-hexBuckSize = 150 #Set very large to ignore
+hexBuckSize = 100 #Size of buckets for processing purposes, effects speed, Set very large to ignore
 
 
 
@@ -397,62 +400,145 @@ print("Found " + str(dotsHandled) + " dots.")
 
 rollingLen = rollLineTarget
 
+
+
+
 #Init Vals
-linesDrawn = 0
 lastPrintTime = time.time()
-#Add lines
-for ptPos in range(len(dots)):
-	pt = dots[ptPos]
-	t1 = time.time()
+linesDrawn = 0
 
-	ptbx = m.floor(pt[0]/hexBuckSize)
-	ptby = m.floor(pt[1]/hexBuckSize)
-	ptboff = (ptby % 2)
+#If doing rolling len do this
+if rollLineTarget > 0:
+	index = 0
+	ptPos = -1
+	while len(dots) > 0:
+		#Select index of next dot to check
+		index += 100
+		while index >= len(dots):
+			index -= len(dots)
+		
+		#Get point
+		pt = dots[index]
+		
+		#remove point for future
+		dots = dots[:index] + dots[index +1:]
 
-	#make tuple of points to consider
-	closeDots = ()
-	closeDots += returnIfInRange(hexBuck, (ptbx           , ptby   ), (len(hexBuck), len(hexBuck[0]))) #One is in
-	closeDots += returnIfInRange(hexBuck, (ptbx +ptboff -1, ptby -1), (len(hexBuck), len(hexBuck[0]))) #UL
-	closeDots += returnIfInRange(hexBuck, (ptbx +ptboff   , ptby -1), (len(hexBuck), len(hexBuck[0]))) #UR
-	closeDots += returnIfInRange(hexBuck, (ptbx -1        , ptby   ), (len(hexBuck), len(hexBuck[0]))) #L
-	closeDots += returnIfInRange(hexBuck, (ptbx +1        , ptby   ), (len(hexBuck), len(hexBuck[0]))) #R
-	closeDots += returnIfInRange(hexBuck, (ptbx +ptboff -1, ptby +1), (len(hexBuck), len(hexBuck[0]))) #DL
-	closeDots += returnIfInRange(hexBuck, (ptbx +ptboff   , ptby +1), (len(hexBuck), len(hexBuck[0]))) #DR
+		#Set vals
+		ptPos += 1
+		t1 = time.time()
+
+		ptbx = m.floor(pt[0]/hexBuckSize)
+		ptby = m.floor(pt[1]/hexBuckSize)
+		ptboff = (ptby % 2)
+
+		#make tuple of points to consider
+		closeDots = ()
+		closeDots += returnIfInRange(hexBuck, (ptbx           , ptby   ), (len(hexBuck), len(hexBuck[0]))) #One is in
+		closeDots += returnIfInRange(hexBuck, (ptbx +ptboff -1, ptby -1), (len(hexBuck), len(hexBuck[0]))) #UL
+		closeDots += returnIfInRange(hexBuck, (ptbx +ptboff   , ptby -1), (len(hexBuck), len(hexBuck[0]))) #UR
+		closeDots += returnIfInRange(hexBuck, (ptbx -1        , ptby   ), (len(hexBuck), len(hexBuck[0]))) #L
+		closeDots += returnIfInRange(hexBuck, (ptbx +1        , ptby   ), (len(hexBuck), len(hexBuck[0]))) #R
+		closeDots += returnIfInRange(hexBuck, (ptbx +ptboff -1, ptby +1), (len(hexBuck), len(hexBuck[0]))) #DL
+		closeDots += returnIfInRange(hexBuck, (ptbx +ptboff   , ptby +1), (len(hexBuck), len(hexBuck[0]))) #DR
 
 
-	#Data at this point in loop
-	#pos: input position
-	#endPts: sorted list of other points by dist, (X, Y, ang, dist)
+		#Data at this point in loop
+		#pos: input position
+		#endPts: sorted list of other points by dist, (X, Y, ang, dist)
 
-	#Sort into array by dist
-	endPts = ()
-	for endPt in closeDots:
-		if pt == endPt: #Dont examine same point
-			continue
+		#Sort into array by dist
+		endPts = ()
+		for endPt in closeDots:
+			if pt == endPt: #Dont examine same point
+				continue
 
-		dist = getDist(pt, endPt)
-		ang = getAngle(pt, endPt)
-		#Sort val. I don't have the energy rn to script in binary sort, deal with it. 
-		bestPos = len(endPts)
-		for i in range(len(endPts)):
-			if dist < endPts[i][3]:
-				bestPos = i
-				break
-		endPts = endPts[:bestPos] + ((endPt + (ang, dist)), ) + endPts[bestPos:]
+			dist = getDist(pt, endPt)
+			ang = getAngle(pt, endPt)
+			#Sort val. I don't have the energy rn to script in binary sort, deal with it. 
+			bestPos = len(endPts)
+			for i in range(len(endPts)):
+				if dist < endPts[i][3]:
+					bestPos = i
+					break
+			endPts = endPts[:bestPos] + ((endPt + (ang, dist)), ) + endPts[bestPos:]
 
-	#If doing rolling len then stop here
-	if rollLineTarget > 0:
+
 		for i in endPts:
 			if i[3] < rollingLen:
 				msp.add_line(convertCAD(pt, yMod = iH), convertCAD(i, yMod = iH), dxfattribs={'layer': 'Sketch'})
 				linesDrawn += 1
-				rollingLen -= i[3]
+				rollingLen -= i[3] +rollConstCost
 			else:
 				break
 		rollingLen += rollLineTarget
 
-	#No rolling len
-	else: 
+			
+
+		currTime = time.time()
+		if currTime - lastPrintTime > 1 and ptPos >0:
+			lastPrintTime = currTime
+			print("Dot " + str(ptPos) + "/" + str(dotsHandled) + " time est ", end = "")
+			timeEst = (currTime - startTime)*((dotsHandled -ptPos)/ptPos)
+			if timeEst/60 > 1:
+				print(str(m.floor(timeEst/60)) + " minutes ", end = '')
+			print(str(timeEst%60)[:4] + " seconds.")
+			# print(runAvgSet[0])
+
+		t2 = time.time()
+		addToAvg(t2-t1, 0)
+		#end loop
+
+
+
+
+
+
+
+
+
+else: #Not rolling len, so do angle based
+	#Add lines
+	for ptPos in range(len(dots)):
+		pt = dots[ptPos]
+		t1 = time.time()
+
+		ptbx = m.floor(pt[0]/hexBuckSize)
+		ptby = m.floor(pt[1]/hexBuckSize)
+		ptboff = (ptby % 2)
+
+		#make tuple of points to consider
+		closeDots = ()
+		closeDots += returnIfInRange(hexBuck, (ptbx           , ptby   ), (len(hexBuck), len(hexBuck[0]))) #One is in
+		closeDots += returnIfInRange(hexBuck, (ptbx +ptboff -1, ptby -1), (len(hexBuck), len(hexBuck[0]))) #UL
+		closeDots += returnIfInRange(hexBuck, (ptbx +ptboff   , ptby -1), (len(hexBuck), len(hexBuck[0]))) #UR
+		closeDots += returnIfInRange(hexBuck, (ptbx -1        , ptby   ), (len(hexBuck), len(hexBuck[0]))) #L
+		closeDots += returnIfInRange(hexBuck, (ptbx +1        , ptby   ), (len(hexBuck), len(hexBuck[0]))) #R
+		closeDots += returnIfInRange(hexBuck, (ptbx +ptboff -1, ptby +1), (len(hexBuck), len(hexBuck[0]))) #DL
+		closeDots += returnIfInRange(hexBuck, (ptbx +ptboff   , ptby +1), (len(hexBuck), len(hexBuck[0]))) #DR
+
+
+		#Data at this point in loop
+		#pos: input position
+		#endPts: sorted list of other points by dist, (X, Y, ang, dist)
+
+		#Sort into array by dist
+		endPts = ()
+		for endPt in closeDots:
+			if pt == endPt: #Dont examine same point
+				continue
+
+			dist = getDist(pt, endPt)
+			ang = getAngle(pt, endPt)
+			#Sort val. I don't have the energy rn to script in binary sort, deal with it. 
+			bestPos = len(endPts)
+			for i in range(len(endPts)):
+				if dist < endPts[i][3]:
+					bestPos = i
+					break
+			endPts = endPts[:bestPos] + ((endPt + (ang, dist)), ) + endPts[bestPos:]
+
+
+
 		#Loop until lines have been found and drawn that meet conditions
 		endLoop = False
 		for tempCon in range(connections, 0, -1): #loop with decreasing
@@ -477,21 +563,21 @@ for ptPos in range(len(dots)):
 			if endLoop:
 				break
 
-	
+		
 
-	currTime = time.time()
-	if currTime - lastPrintTime > 1 and ptPos >0:
-		lastPrintTime = currTime
-		print("Dot " + str(ptPos) + "/" + str(dotsHandled) + " time est ", end = "")
-		timeEst = (currTime - startTime)*((dotsHandled -ptPos)/ptPos)
-		if timeEst/60 > 1:
-			print(str(m.floor(timeEst/60)) + " minutes ", end = '')
-		print(str(timeEst%60)[:4] + " seconds.")
-		# print(runAvgSet[0])
+		currTime = time.time()
+		if currTime - lastPrintTime > 1 and ptPos >0:
+			lastPrintTime = currTime
+			print("Dot " + str(ptPos) + "/" + str(dotsHandled) + " time est ", end = "")
+			timeEst = (currTime - startTime)*((dotsHandled -ptPos)/ptPos)
+			if timeEst/60 > 1:
+				print(str(m.floor(timeEst/60)) + " minutes ", end = '')
+			print(str(timeEst%60)[:4] + " seconds.")
+			# print(runAvgSet[0])
 
-	t2 = time.time()
-	addToAvg(t2-t1, 0)
-	#end loop
+		t2 = time.time()
+		addToAvg(t2-t1, 0)
+		#end loop
 
 
 

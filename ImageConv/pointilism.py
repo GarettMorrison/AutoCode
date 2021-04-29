@@ -18,10 +18,10 @@ startTime = time.time()
 runAvg = (0,0)
 
 #Big Vars
-doInvert = 1 #1 inverts, 0 doesnt
-skipWhite = 0 #1 does, 0 doesnt
-minDist = 7
-maxDist = 50
+doInvert = 0 #1 inverts, 0 doesnt
+skipWhite = 1 #1 does, 0 doesnt
+minDist = 3
+maxDist = 30
 
 skipPixFactor = 3.2739
 
@@ -45,8 +45,9 @@ except:
 try:
 	os.mkdir("out/" + outString)
 except:
-	print("Error: Output Folder out/" + outString + " already exists")
-	sys.exit()
+	if os.listdir("out/" + outString) != []:
+		print("Error: Output Folder out/" + outString + " already exists")
+		sys.exit()
 
 
 # connectDots = 0
@@ -300,9 +301,11 @@ fileOut = open(infoOutString, "w")
 
 #Find any image files in directory
 imgPaths = ()
-for file in os.listdir(os.getcwd()):
+for file in os.listdir(os.getcwd()) + ["img/" + strVal for strVal in (os.listdir(os.getcwd() + "/img"))]:
+	print(file)
 	if file.endswith(".png"):
 		imgPaths += (file,)
+
 
 if len(imgPaths) == 0:
 	print("No Images Found")
@@ -311,11 +314,13 @@ elif len(imgPaths) == 1:
 	imgPath = imgPaths[0]
 else:
 	print("Multiple Images Found. Please select one.")
-	for i in range(len(imgPaths)):
-		print(str(i).ljust(3, " ") + imgPaths[i])
+	for i in range(1, 1+len(imgPaths)):
+		print(str(i).ljust(3, " ") + imgPaths[i -1])
 	index = int(input("Select Index:"))
-	imgPath = imgPaths[index]
+	imgPath = imgPaths[index -1]
 
+if imgPath == "None":
+	sys.exit()
 inImg = Image.open(imgPath).convert('L')
 
 size = inImg.size
