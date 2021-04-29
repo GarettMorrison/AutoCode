@@ -29,7 +29,9 @@ Same as gext, but will not shrink lines, only extend
 
 
 ## ImageConv
-A handful of python scripts to convert images to DXFs designed to be laser engraved. Mostly not super useful, but fun. It's pretty slow, as I used Python to make it easier to tweak between runs. Each run outputs a DXF, an image containing the map of dots, and a file with run details. 
+A handful of python scripts to convert images to DXFs designed to be laser engraved. Mostly not super useful, but fun. It's pretty slow, as I used Python to make it easier to tweak between runs. Each run outputs a DXF, an image containing the map of dots, and a file with run details in a folder. 
+
+To set up folders run ./cleanup. It will also clean your existing out & dump folders, if already set up. To run python scripts, simple run with the name of the desired output as the an argument. Save input images under img or in ImageConv. 
 
 ### pointilism.py
 Converts greyscale images into dots. Can be tweaked to do a lot to do interesting things, the variables to play with are at the top of the file. It's simply a more interesting way of rastering images. 
