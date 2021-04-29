@@ -19,11 +19,11 @@ runAvg = (0,0)
 
 #Big Vars
 doInvert = 1 #1 inverts, 0 doesnt
-skipWhite = 1 #1 does, 0 doesnt
-minDist = 4
-maxDist = 12
+skipWhite = 0 #1 does, 0 doesnt
+minDist = 7
+maxDist = 50
 
-skipPixFactor = 25.2739
+skipPixFactor = 3.2739
 
 quickSaveTick = 100000
 
@@ -297,17 +297,26 @@ imgOrigOutString = "out/" + outString + "/input.png"
 fileOut = open(infoOutString, "w")
 
 #Load input Image
-try:
-	#Find any image files in directory
-	imgPath = ""
-	for file in os.listdir(os.getcwd()):
-		if file.endswith(".png"):
-			imgPath = file
 
-	inImg = Image.open(imgPath).convert('L')
-except IOError:
-	print("Unable to load image")
-	sys.exit(1)
+#Find any image files in directory
+imgPaths = ()
+for file in os.listdir(os.getcwd()):
+	if file.endswith(".png"):
+		imgPaths += (file,)
+
+if len(imgPaths) == 0:
+	print("No Images Found")
+	sys.exit()
+elif len(imgPaths) == 1:
+	imgPath = imgPaths[0]
+else:
+	print("Multiple Images Found. Please select one.")
+	for i in range(len(imgPaths)):
+		print(str(i).ljust(3, " ") + imgPaths[i])
+	index = int(input("Select Index:"))
+	imgPath = imgPaths[index]
+
+inImg = Image.open(imgPath).convert('L')
 
 size = inImg.size
 iW, iH = size
@@ -431,7 +440,7 @@ while True:
 		setPix(pos, 0, tPix)
 		msp.add_point(convertCAD(pos, yMod = iH), dxfattribs={'layer': 'Sketch'})
 	#Do periodic ifs
-	if time.time() - currTime > 0.5: #Print time estimate
+	if time.time() - currTime > 1: #Print time estimate
 		currTime = time.time()
 		timeEst = (currTime - startLoopTime) * (totalPix - checkPix)/checkPix
 		print(str(round(100*checkPix/totalPix, 2)).rjust(4) + "% done, Placed|Checked|Total" + str(placePix).rjust(m.floor(m.log(totalPix, 10))) + "|" + str(checkPix).rjust(m.floor(m.log(totalPix, 10))) + "|" + str(totalPix).rjust(m.floor(m.log(totalPix, 10))) + " est ", end = "")
@@ -525,7 +534,19 @@ pointTime = time.time() - startLoopTime
 #Save files
 tImg.save(imgOutString)
 inImg.save(imgOrigOutString)
-doc.saveas(dxfOutString)
+
+try:
+	doc.saveas(dxfOutString)
+except:
+	print(dxfOutString + " Taken")
+	i = 0
+	while True:
+		try:
+			doc.saveas(dxfOutString[:-4] + "_" + str(i) + ".dxf")
+			break
+		except:
+			print(dxfOutString[:-4] + "_" + str(i) + ".dxf" + " Taken")
+			i += 1
 
 #Get endtime
 endTime = time.time()
