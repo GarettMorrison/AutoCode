@@ -5,4 +5,5 @@ rm -rf dump #
 rm -rf out #
 mkdir dump #
 mkdir out #
+mkdir -p img #
 #
