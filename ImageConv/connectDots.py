@@ -20,14 +20,14 @@ startTime = time.time()
 quickSaveTick = 100000
 
 #Values for angle based run
-connections = 8
-minAngle = 10 #Set to 0 to ignore
+connections = 2
+minAngle = 50 #Set to 0 to ignore
 
 #Values for rolling sum run
-rollLineTarget = 20 #Sum added per point to line dists, Set -1 to ignore
-rollConstCost = 1 #Constant cost per line
+rollLineTarget = -1 #Sum added per point to line dists, Set -1 to ignore
+rollConstCost = 2 #Constant cost per line
 
-hexBuckSize = 100 #Size of buckets for processing purposes, effects speed, Set very large to ignore
+hexBuckSize = 50 #Size of buckets for processing purposes, effects speed, Set very large to ignore
 
 
 
@@ -374,6 +374,7 @@ print("Getting Pix")
 
 #Connect dots
 print("Loading Dots")
+
 #Make hexagonal square bucket pattern
 #odd buckets are offset by 1/2, x has 1 extra bc of this
 hexBuck = (((),)*m.ceil(iH/hexBuckSize),)*m.ceil(iW/hexBuckSize +1)
@@ -385,7 +386,7 @@ for i in range(iW):
 		pos = (i,j)
 		if not (getPix(pos, iPix) in (-1, 255, 100)):
 			by = m.floor(j/hexBuckSize)
-			bx = m.floor((i +0.5)/hexBuckSize)
+			bx = m.floor((i +(0.5*(by%2)))/hexBuckSize)
 			dotsHandled += 1
 			dots += pos,
 			hexBuck = hexBuck = hexBuck[:bx] + (hexBuck[bx][:by] + (hexBuck[bx][by] + (pos,) ,) + hexBuck[bx][by +1:] ,) + hexBuck[bx +1:]
@@ -427,8 +428,8 @@ if rollLineTarget > 0:
 		ptPos += 1
 		t1 = time.time()
 
-		ptbx = m.floor(pt[0]/hexBuckSize)
 		ptby = m.floor(pt[1]/hexBuckSize)
+		ptbx = m.floor((pt[0] +(0.5*(ptby%2)))/hexBuckSize)
 		ptboff = (ptby % 2)
 
 		#make tuple of points to consider

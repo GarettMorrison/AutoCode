@@ -20,15 +20,18 @@ runAvg = (0,0)
 #Big Vars
 doInvert = 0 #1 inverts, 0 doesnt
 skipWhite = 1 #1 does, 0 doesnt
+doMapToImgRange = 0 #1 scales the mindist and max to match the darking and lightest pixel, not 0 & 255
+
 minDist = 3
-maxDist = 30
+maxDist = 150
 
-skipPixFactor = 3.2739
+skipPixFactorVariation = 1.5
+skipPixFactor = 2.2739 +skipPixFactorVariation*(0.5 -r.randint(0,501)/500)
 
-quickSaveTick = 100000
+quickSaveTick = 10000
 
-# connectDots = 0 #Set to 0 to ignore
-# minAngConnect = 0 #Set to 0 to ignore
+hexBuckSize = maxDist*1.2 #Size of buckets for processing purposes, effects speed, Set very large to ignore
+
 
 #Big calc vals
 maxColor = 0
@@ -44,8 +47,8 @@ except:
 
 try:
 	os.mkdir("out/" + outString)
-except:
-	if os.listdir("out/" + outString) != []:
+except:		
+	if len(os.listdir("out/" + outString)) > 1:
 		print("Error: Output Folder out/" + outString + " already exists")
 		sys.exit()
 
@@ -57,6 +60,17 @@ except:
 # 	connectDots = 0
 
 #Start geometry functions
+runAvgSet = ((0,0),)*5
+def addToAvg(inVal, index):
+	global runAvgSet
+	avgSet = runAvgSet[index]
+
+	avgSet = ((avgSet[0]*avgSet[1]+inVal)/(avgSet[1]+1), avgSet[1]+1)
+
+	runAvgSet = runAvgSet[:index] + (avgSet,) + runAvgSet[index +1:]
+
+
+
 def cos(inputVal):
 	return(m.cos(m.radians(inputVal)))
 
@@ -71,15 +85,46 @@ def atan(inputVal):
 
 def getLinePt(line, val, isX): #gets point on line, isX is set to if it's an x input 
 	if isX:
-		outVal = (val - line[0])*tan(     line[2]) + line[1]
+		y = (val - line[0])*tan(     line[2]) + line[1]
+		x = (y - line[1])*tan(90 - line[2]) + line[0]
 	else:
-		outVal = (val - line[1])*tan(90 - line[2]) + line[0]
+		x = (val - line[1])*tan(90 - line[2]) + line[0]
+		y = (x - line[0])*tan(     line[2]) + line[1]
 
-	return(outVal)
+	return((x,y))
 
 def getDist(a,b): #Dist between 2 points
 	dist = m.sqrt(pow((a[0]-b[0]), 2) + pow((a[1]-b[1]), 2))
 	return dist
+
+def getAngle(a,b): #Dist between 2 points
+	outAng = -1
+	if(b[0] - a[0] == 0):
+		if b[1] > a[1]:
+			outAng = 90
+		else:
+			outAng = 270
+	else:
+		outAng = atan((b[1]-a[1]) / (b[0]-a[0]))
+
+	# if outAng < 0:
+	# 	outAng += 360
+
+	if (b[0]-a[0]) < 0:
+		outAng += 180
+	if outAng < 0:
+		outAng += 360
+
+	return outAng
+
+def getDiffWrap(in1, in2, range):
+	basic = abs(in1-in2)
+	wrap = abs((in1 +range[1] -range[0] -in2))
+
+	if basic < wrap:
+		return(basic)
+	else:
+		return(wrap)
 
 def toRange(input,min,max): #Map to range with overflow
 	while input < min:
@@ -106,6 +151,14 @@ def cap(input,min,max): #Map to range with overflow
 	if input > max:
 		input = max
 	return input
+
+def returnIfInRange(inputArr, pos, sizeMax, sizeMin = (0,0)):
+	point = inputArr
+	for i in range(len(sizeMax)):
+		if pos[i] < sizeMin[i] or pos[i] >= sizeMax[i]:
+			return(())
+		point = point[pos[i]]
+	return(point)
 
 def pointLineDist(line, p): #Get Dist from line to point
 	if p[0] - line[0] == 0:
@@ -166,39 +219,31 @@ def getImgRange(inPix):
 				minVal = inPix[i,j]
 	return(minVal, maxVal)
 
-def getClosestDist(pos, inPix, doPrint = False):
+def getClosestDist(pt, hexBuck, doPrint = False):
 	global size
 	minR = size[0] + size[1] #Set large, so anything is preferable. 
 
-	r = 1
-	while True:
-		# print("\n" + str(r))
-		for i in range(-1*r +1, r+1):
-			# print(i, end = " ")
-			check = 0
-			check += (getPix((   r + pos[0],    i + pos[1]), inPix) in (-1, 255, 100))#Right-up
-			check += (getPix((-1*r + pos[0], -1*i + pos[1]), inPix) in (-1, 255, 100))#Left-down
-			check += (getPix((-1*i + pos[0],    r + pos[1]), inPix) in (-1, 255, 100))#Top-left
-			check += (getPix((   i + pos[0], -1*r + pos[1]), inPix) in (-1, 255, 100))#Bott-right
+	pty = m.floor(pt[1]/hexBuckSize)
+	ptx = m.floor((pt[0] +(0.5*(pty%2)))/hexBuckSize)
 
+	ptboff = (pty % 2)
 
-			#Print search area for debugging
-			if doPrint:
-				setPix((   r + pos[0],    i + pos[1]), 100, inPix)
-				setPix((-1*r + pos[0], -1*i + pos[1]), 100, inPix)
-				setPix((-1*i + pos[0],    r + pos[1]), 100, inPix)
-				setPix((   i + pos[0], -1*r + pos[1]), 100, inPix)
+	#make tuple of points to consider
+	closeDots = ()
+	closeDots += returnIfInRange(hexBuck, (ptx           , pty   ), (len(hexBuck), len(hexBuck[0]))) #One is in
+	closeDots += returnIfInRange(hexBuck, (ptx +ptboff -1, pty -1), (len(hexBuck), len(hexBuck[0]))) #UL
+	closeDots += returnIfInRange(hexBuck, (ptx +ptboff   , pty -1), (len(hexBuck), len(hexBuck[0]))) #UR
+	closeDots += returnIfInRange(hexBuck, (ptx -1        , pty   ), (len(hexBuck), len(hexBuck[0]))) #L
+	closeDots += returnIfInRange(hexBuck, (ptx +1        , pty   ), (len(hexBuck), len(hexBuck[0]))) #R
+	closeDots += returnIfInRange(hexBuck, (ptx +ptboff -1, pty +1), (len(hexBuck), len(hexBuck[0]))) #DL
+	closeDots += returnIfInRange(hexBuck, (ptx +ptboff   , pty +1), (len(hexBuck), len(hexBuck[0]))) #DR
 
+	for i in closeDots:
+		if getDist(pt, i) < minR:
+			minR = getDist(pt, i)
 
-			if check < 4: #If one of the pix was positive
-				tempR = getDist((0,0), (i,r))
-				if tempR < minR:
-					minR = tempR
-
-		if minR < r: #Confirm that there isn't a closer point, as this may be a corner of the square
-			return(minR) 
-		r += 1
-	#End of function, will run infinitely with no pixels to find
+	
+	return(minR)
 
 
 
@@ -298,30 +343,38 @@ imgOrigOutString = "out/" + outString + "/input.png"
 fileOut = open(infoOutString, "w")
 
 #Load input Image
-
-#Find any image files in directory
-imgPaths = ()
-for file in os.listdir(os.getcwd()) + ["img/" + strVal for strVal in (os.listdir(os.getcwd() + "/img"))]:
-	print(file)
-	if file.endswith(".png"):
-		imgPaths += (file,)
-
-
-if len(imgPaths) == 0:
-	print("No Images Found")
-	sys.exit()
-elif len(imgPaths) == 1:
-	imgPath = imgPaths[0]
+imgPath = ""
+if len(sys.argv) > 2:
+	imgPath = sys.argv[2]
 else:
-	print("Multiple Images Found. Please select one.")
-	for i in range(1, 1+len(imgPaths)):
-		print(str(i).ljust(3, " ") + imgPaths[i -1])
-	index = int(input("Select Index:"))
-	imgPath = imgPaths[index -1]
+	#Find any image files in directory
+	imgPaths = ()
+	for file in os.listdir(os.getcwd()) + ["img/" + strVal for strVal in (os.listdir(os.getcwd() + "/img"))]:
+		print(file)
+		if file.endswith(".png"):
+			imgPaths += (file,)
 
-if imgPath == "None":
+	if len(imgPaths) == 0:
+		print("No Images Found")
+		sys.exit()
+	elif len(imgPaths) == 1:
+		imgPath = imgPaths[0]
+	else:
+		print("Multiple Images Found. Please select one.")
+		for i in range(1, 1+len(imgPaths)):
+			print(str(i).ljust(3, " ") + imgPaths[i -1])
+		index = int(input("Select Index:"))
+		imgPath = imgPaths[index -1]
+
+	if imgPath == "None":
+		sys.exit()
+
+#Actually open image
+try:
+	inImg = Image.open(imgPath).convert('L')
+except:
+	print("Error opening image")
 	sys.exit()
-inImg = Image.open(imgPath).convert('L')
 
 size = inImg.size
 iW, iH = size
@@ -391,9 +444,17 @@ print("Starting Run")
 # print("----------------------")
 
 
+#Make hexagonal square bucket pattern
+#odd buckets are offset by 1/2, x has 1 extra bc of this
+hexBuck = (((),)*m.ceil(iH/hexBuckSize),)*m.ceil(iW/hexBuckSize +1)
+
 
 #Set inits
-colorRange = getImgRange(tPix)
+if doMapToImgRange:
+	colorRange = getImgRange(tPix)
+else:
+	colorRange = (0,255)
+
 if doInvert: #Invert image during runtime
 	colorRange = (colorRange[1], colorRange[0])
 
@@ -431,10 +492,12 @@ while True:
 
 	#pos is secured
 	inVal = getPix(pos, iPix)
+
+	#Skip if pix is white and is set to skip white
 	if skipWhite and inVal == 255:
 		continue
-	dist = getClosestDist(pos, tPix)
 
+	dist = getClosestDist(pos, hexBuck)
 
 	distRange = (minDist, maxDist)
 	targetDist = mapToRange(inVal, colorRange, distRange)
@@ -442,8 +505,14 @@ while True:
 	#If pixel should be placed
 	if dist > targetDist:
 		placePix += 1
+
+		pty = m.floor(pos[1]/hexBuckSize)
+		ptx = m.floor((pos[0] +(0.5*(pty%2)))/hexBuckSize)
+		hexBuck = hexBuck = hexBuck[:ptx] + (hexBuck[ptx][:pty] + (hexBuck[ptx][pty] + (pos,) ,) + hexBuck[ptx][pty +1:] ,) + hexBuck[ptx +1:]
+
 		setPix(pos, 0, tPix)
 		msp.add_point(convertCAD(pos, yMod = iH), dxfattribs={'layer': 'Sketch'})
+
 	#Do periodic ifs
 	if time.time() - currTime > 1: #Print time estimate
 		currTime = time.time()
