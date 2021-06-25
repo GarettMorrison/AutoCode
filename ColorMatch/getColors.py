@@ -30,7 +30,7 @@ except:
 
 
 #Make output filenames
-infoOutString = "out/" + outString + "/info.txt"
+infoOutString = "out/" + outString + "/colors.txt"
 imgOutString = "out/" + outString + "/colsMapped.png"
 
 #Load output string
