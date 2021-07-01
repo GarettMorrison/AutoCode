@@ -27,11 +27,9 @@ except:
 
 
 
-
-
 #Make output filenames
 infoOutString = "out/" + outString + "/colors.txt"
-imgOutString = "out/" + outString + "/colsMapped.png"
+imgOutString = "out/" + outString + "/matched.png"
 
 #Load output string
 fileOut = open(infoOutString, "w")
@@ -138,78 +136,6 @@ for y in range(iH):
 				if (xTest, yTest) in pixToCheck: continue
 
 				pixToCheck.append((xTest, yTest))
-
-			# print(pixToCheck)
-
-
-
-		# changedPx = True
-		# loopCount = 1
-		# while changedPx:
-		# 	if loopCount > 1: print("loop: " + str(loopCount))
-		# 	loopCount += 1
-		# 	changedPx = False
-
-		# 	for y2 in range(iH):
-		# 		for x2 in range(iW):
-		# 			currGroup = outPts[x2][y2]
-		# 			if currGroup != 0: #No double set
-		# 				continue
-
-		# 			checkPos = ((-1,0), (0,-1), (1,0), (0,1))
-		# 			adjGroups = []
-
-		# 			for i in checkPos:
-		# 				xTest = x2 +i[0]
-		# 				yTest = y2 +i[1]
-		# 				if inRange((xTest, yTest), size):
-		# 					foo = outPts[xTest][yTest]
-		# 					if foo == newGroup:
-		# 						outPts[x2][y2] = newGroup
-		# 						changedPx = True
-		# 						break
-
-# print("Collapsing Groups")
-# #Loop every point
-# changedPx = True
-# loopCount = 0
-# while changedPx:
-# 	print("loop: " + str(loopCount))
-# 	loopCount += 1
-
-# 	changedPx = False
-# 	for y in range(iH):
-# 		# print("on row " + str(y))
-# 		for x in range(iW):
-# 			currGroup = outPts[x][y]
-# 			if currGroup == -1:
-# 				continue
-
-# 			adjGroups = []
-# 			checkPos = ((-1,0), (0,-1), (1,0), (0,1))
-
-# 			for i in checkPos:
-# 				xTest = x +i[0]
-# 				yTest = y +i[1]
-# 				if inRange((xTest, yTest), size):
-# 					foo = outPts[xTest][yTest]
-# 					if foo > 0:
-# 						adjGroups.append(foo)
-
-# 			collapseTo = -1
-# 			for i in adjGroups:
-# 				if i < outPts[x][y]:
-# 					collapseTo = i
-
-# 			if collapseTo > -1:
-				# outPts[x][y] = collapseTo
-				# changedPx = True
-				# print("Collapsing " + str(currGroup) + " to " + str(collapseTo))
-				# #Reset every other adjacent group
-				# for y1 in range(iH):
-				# 	for x1 in range(iW):
-				# 		if outPts[x1][y1] == currGroup:
-				# 			outPts[x1][y1] = collapseTo
 
 			
 print("Getting group averages")
