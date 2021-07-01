@@ -110,8 +110,8 @@ for y in range(iH):
 
 		# print("------------------------------------------------------------------------------------------------")
 		while len(pixToCheck) > 0: #Loop until all pix in group have been checked
-			if len(pixToCheck) > 200:
-				print(len(pixToCheck))
+			# if len(pixToCheck) > 200:
+				# print(len(pixToCheck))
 
 			pos = pixToCheck.pop(0)
 			fooCol = outPts[pos[0]][pos[1]]
