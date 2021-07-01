@@ -22,13 +22,14 @@ try:
 	os.mkdir("out/" + outString)
 except:		
 	if len(os.listdir("out/" + outString)) > 1:
-		input("Error: Output Folder out/" + outString + " already exists. Continue?")
-		# sys.exit()
+		input("Warning: Output Folder out/" + outString + " already exists. Continue?")
 
 
 #Make output filenames
 infoOutString = "out/" + outString + "/info.txt"
-imgOutString = "out/" + outString + "/MappedToCols.png"
+imgOutString_allPix = "out/" + outString + "/input_lessPix.png"
+imgOutString_original = "out/" + outString + "/original.png"
+imgOutString = "out/" + outString + "/matched.png"
 
 #Load input Image
 imgPath = ""
@@ -69,6 +70,7 @@ size = inImg.size
 iW, iH = size
 totalPix = iW*iH
 iPix = inImg.load()
+inImg.save(imgOutString_original)
 
 #Make new image to experiment on
 tImg = Image.new("RGB",size, 0)
@@ -137,7 +139,7 @@ for x in range(iW):
 		colCounts[bestCol] += 1
 		tPix[(x,y)] = colors[bestCol]
 
-tImg.save(imgOutString[:-4] + "_all.png")
+tImg.save(imgOutString_allPix)
 
 
 print("Removing barely used colors")
@@ -147,7 +149,7 @@ print(colCounts)
 
 i = 0
 while i < len(colors):
-	if colCounts[i]/pixTotal < 0.005:
+	if colCounts[i]/pixTotal < 0.01:
 		print("Removing " + str(colors[i]) + " as it makes up " + str(colCounts[i]/pixTotal) + " of the image")
 		colors.pop(i)
 		colCounts.pop(i)
@@ -181,6 +183,9 @@ for x in range(iW):
 				bestCol = col
 
 		tPix[(x,y)] = bestCol
+
+print("Saved " + imgOutString)
+print("Finished running " + outString)
 
 tImg.save(imgOutString)
 
