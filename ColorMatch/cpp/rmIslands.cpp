@@ -1,116 +1,86 @@
 #include <iostream>
 #include <fstream>
-
 #include <iomanip>
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
-// #include <string>
+
+#include "bin_custom.h"
 
 using namespace std;
 
 int iW;
 int iH;
 
-int minGroupSize = 10;
+int minGroupSize = 20;
 
-// struct linkPoint{
-// 	linkPoint* next;
-// 	int x;
-// 	int y;
-// }
+int adjPtsOffsets[4][2] = {{0,1},{0,-1},{1,0},{-1,0}};
 
-// class linkPointList{
-// 	public:
-// 		linkPoint* first;
-// 		linkPoint* end;
-// 		bool popFirst(int* output){
-// 			if(first -> next == NULL){return false;}
-// 			output[0] = first -> x;
-// 			output[1] = first -> y;
-// 			linkPoint tmp = first;
-// 			first = first -> next;
-// 			delete tmp;
-
-// 		};
-// 		void
-// }
+struct linkPoint{
+	linkPoint* next = NULL;
+	int x;
+	int y;
+};
 
 
-// class intGrid{
-// public:
-// 	int iW;
-// 	int iH;
-// 	int** grid;
-// 	intGrid(int _iW, int _iH){
-// 		grid = new int*[iW];
-// 		for(int i = 0; i < iW; i++){
-// 			grid[i] = new int[iH];
-// 			for(int j = 0; j < iH; j++){
-// 				grid[i][j] = -1;
-// 			}
-// 		}
-// 	};
-// };
-
-// void checkPt(int x, int y, int targ, int iW, int iH, int** inGrid, int** outGrid){
-// 	if(x < 0 || x >= iW || y < 0 || y >= iH){return}
-// 	if(outGrid[x][y] != 0){return;} //Point already checked
-
-// 	if(inGrid[x][y] != targ){
-// 		outGrid[x][y] = 2;
-// 		return;
-// 	}
-	
-// }
 
 int main(){
-	ifstream pixIn;
-	pixIn.open("pix.txt");
+	multiArray pixIn("cArr.bin", true);
+	
 
-	pixIn >> iW;
-	pixIn >> iH;
 
-	cout << "Running C++ SCRIPT!!!";
+	iW = pixIn.lens[0];
+	iH = pixIn.lens[1];
 
-	// char inLocation = 20
+	// cout << pixIn.lens[0] << ' ' << pixIn.lens[1] << '\n';
 
-	// cin >> cout;
-	// for(int i=0; i<15; i++){int foo; pixIn >> foo; printf(foo); printf("\n");}
-
-	// cout << "pixIn is " << pixIn.is_open() << "\n";
-	// cout << iW << " " << iH << "\n";
+	int* pos = new int[2];
 
 	//Init arrays
-	int** colVals = new int*[iH];
-	int** currMap = new int*[iH];
-	bool** ptChecked = new bool*[iH];
+	// int** colVals = new int*[iH];
+	int** currMap = new int*[iW];
+	bool** ptChecked = new bool*[iW];
+
+
 	for(int i = 0; i < iW; i++){
-		colVals[i] = new int[iW];
-		currMap[i] = new int[iW];
-		ptChecked[i] = new bool[iW];
-		for(int j = 0; j < iW; j++){
-			pixIn >> colVals[i][j];
+
+		// colVals[i] = new int[iW];
+		currMap[i] = new int[iH];
+		ptChecked[i] = new bool[iH];
+		for(int j = 0; j < iH; j++){
+			pos[0] = i;
+			pos[1] = j;
+			// colVals[i][j] = pixIn.get(i,j);
 			currMap[i][j] = 0;
 			ptChecked[i][j] = false;
+			// printf("%d %d", i, j);
+			// if(pixIn.get(pos) > 0){printf("testsucc %d\n", pixIn.get(pos));}
 		}
 	}
-	pixIn.close();
+
+
 
 	//Get max color
+	// printf("Printing pixels\n");
 	int colCount = -1;
 	for(int ptx = 0; ptx < iW; ptx++){
 		for(int pty = 0; pty < iH; pty++){
-			if(colVals[ptx][pty] > colCount){colCount = colVals[ptx][pty];}
+			// printf("%d ", pixIn.get(ptx, pty));
+			if(pixIn.get(ptx,pty) > colCount){colCount = pixIn.get(ptx,pty);}
 		}
+		// printf("\n");
 	}
+
+
+
+	colCount += 1;
 
 
 	//Find groups
 	for(int ptx = 0; ptx < iW; ptx++){
+		printf("On line %d\n", ptx);
 		for(int pty = 0; pty < iH; pty++){
 			if(ptChecked[ptx][pty]){continue;} //Skip if already checked
-
 
 			//Clean currMap
 			for(int x = 0; x < iW; x++){
@@ -119,45 +89,48 @@ int main(){
 				}
 			}
 
+			// printf("bbb\n");
 
-
-			// cout << "--------------\n";
-			int targCol = colVals[ptx][pty];
+			int targCol = pixIn.get(ptx,pty);
 
 			//Loop and find group borders
 			int groupCount = 0;
-			bool pixPlaced = true;
+
 			currMap[ptx][pty] = 1;
 
-			while(pixPlaced){
-				pixPlaced = false;
+			linkPoint* currPoint = new linkPoint;
+			linkPoint* lastPoint = currPoint;
+			currPoint -> x = ptx;
+			currPoint -> y = pty;
 
-				for(int x = 0; x < iW; x++){
-					for(int y = 0; y < iH; y++){
-						if(currMap[x][y] != 0){continue;}
+			while(currPoint != NULL){
+				for(int i = 0; i < 4; i++){
+					// printf("DDDDDD\n");
+					int x = currPoint -> x + adjPtsOffsets[i][0];
+					int y = currPoint -> y + adjPtsOffsets[i][1];
+					// printf("pt %d %d %d \n", i, x, y);
+					if(x < 0 || x >= iW || y < 0 || y >= iH){continue;}
+					if(currMap[x][y] != 0){continue;}
 
-						int isAdjacent = 0;
+					if(pixIn.get(x,y) == targCol){
+						currMap[x][y] = 1;
+						groupCount += 1;
 
-						if(x+1 < iW && currMap[x +1][y] == 1){isAdjacent += 1;}
-						if(x-1 >= 0 && currMap[x -1][y] == 1){isAdjacent += 1;}
-						if(y+1 < iH && currMap[x][y +1] == 1){isAdjacent += 1;}
-						if(y-1 >= 0 && currMap[x][y -1] == 1){isAdjacent += 1;}
-
-						if(isAdjacent <= 0){continue;} //Ignore if not adjacent
-
-						pixPlaced = true;
-						if(colVals[x][y] == targCol){
-							currMap[x][y] = 1;
-							groupCount += 1;
-						}else{
-							currMap[x][y] = 2;
-						}
+						lastPoint -> next = new linkPoint;
+						lastPoint -> next -> x = x;
+						lastPoint -> next -> y = y;
+						lastPoint = lastPoint -> next;
+					}else{
+						// printf("%d", pixIn.get(x,y));
+						currMap[x][y] = 2;
 					}
 				}
-			}
 
+				linkPoint* temp = currPoint;
+				currPoint = currPoint -> next;
+				delete temp;
+			}			
 
-			
 
 			//Found group
 			if(groupCount > minGroupSize){ //Large, dont remove
@@ -167,22 +140,21 @@ int main(){
 					}
 				}
 			}else{
-				//Remove groups
-
 				//Find most common neighbor
 				int* colBuckets = new int[colCount];
 				for(int i=0; i<colCount; i++){colBuckets[i] = 0;}
 				//Fill buckets
 				for(int x = 0; x < iW; x++){
 					for(int y = 0; y < iH; y++){
-						if(currMap[x][y] == 2){colBuckets[colVals[x][y]] += 1;}
+						if(currMap[x][y] == 2){colBuckets[pixIn.get(x,y)] += 1;}
 					}
 				}
 
 				//Find replacement col
-				int bestReplaceCol = -1;
+				int bestReplaceCol = 1;
 				int bestReplaceColCount = -1;
 				for(int i=0; i<colCount; i++){
+					// printf("| i%d:%d ", i, colBuckets[i]);
 					// cout << colBuckets[i] << ' ';
 					if(colBuckets[i] > bestReplaceColCount){
 						bestReplaceColCount = colBuckets[i];
@@ -190,13 +162,17 @@ int main(){
 					}
 				}
 
+				// printf("\n");
+
+
 				delete colBuckets;
 
 				//
 				for(int x = 0; x < iW; x++){
 					for(int y = 0; y < iH; y++){
 						if(currMap[x][y] == 1){
-							colVals[x][y] = bestReplaceCol;
+							pixIn.set(bestReplaceCol, x, y);
+							// printf("Replaced %d with %d\n", targCol, bestReplaceCol);
 
 						}
 					}
@@ -205,74 +181,32 @@ int main(){
 
 				// cout << "RM " << targCol << " -> " << bestReplaceCol << '\n';
 			}
-
-			// //Print group
-			// for(int y = 0; y < iH; y++){
-			// 	for(int x = 0; x < iW; x++){
-			// 		if(currMap[x][y] == 0){cout << ' ';}
-			// 		if(currMap[x][y] == 1){cout << 'X';}
-			// 		if(currMap[x][y] == 2){cout << '*';}
-			// 		cout << ' ';
-			// 	}
-			// 	cout << '\n';
-			// }
-
-
-			// cout << groupCount << " " << targCol << "\n";
-			// for(int y = 0; y < iH; y++){
-			// 	for(int x = 0; x < iW; x++){
-			// 		if(ptChecked[x][y]){cout << 'O';}
-			// 		else{cout << ' ';}
-			// 		cout << ' ';
-			// 	}
-			// 	cout << '\n';
-			// }
-
-			// cout << '\n';
-
-			// for(int y = 0; y < iH; y++){
-			// 	for(int x = 0; x < iW; x++){
-			// 		cout << colVals[x][y] << ' ';
-			// 	}
-			// 	cout << '\n';
-			// }
 			
 		}
 	}
 
-
-	//Save
-	ofstream pixOut;
-	pixOut.open("nPix.txt");
-	pixOut << iW << ' ' << iH << '\n';
-
-	for(int x = 0; x < iW; x++){
-		for(int y = 0; y < iH; y++){
-			pixOut << colVals[x][y];
-			if(y < iH-1){pixOut << ' ';}
-		}
-		pixOut << '\n';
-	}
-	pixOut.close();
-
-	// for(int x = 0; x < iW; x++){
-	// 	for(int y = 0; y < iH; y++){
-	// 		cout << colVals[x][y] << ' ';
+	// printf("Final Output\n");
+	// for(int ptx = 0; ptx < iW; ptx++){
+	// 	for(int pty = 0; pty < iH; pty++){
+	// 		printf("%d ", pixIn.get(ptx, pty));
 	// 	}
-	// 	cout << '\n';
+	// 	printf("\n");
 	// }
 
-	// cout << "------------------\n";
+	cout << "Saving\n";
+	pixIn.save("ncArr.bin");
+	printf("All saved!");
 
 	//Clean up
 	for(int i = 0; i < iH; i++){
-		delete colVals[i];
-		delete currMap[i];
-		delete ptChecked[i];
+		// delete colVals[i];
+		delete[] currMap[i];
+		delete[] ptChecked[i];
 	}
-	delete colVals;
-	delete currMap;
-	delete ptChecked;
+	// delete[] colVals;
+	delete[] currMap;
+	delete[] ptChecked;
+	delete pos;
 
-	cout << "DONE\n";
+	cout << "DONE!\n";
 }
