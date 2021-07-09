@@ -36,7 +36,9 @@ def saveBinArr(oFileName, arr):
 		foo = foo[0]
 
 	oFile.write(len(dims).to_bytes(4, 'big'))
+	# print(len(dims).to_bytes(4, 'big'))
 	for i in dims: 
+		# print(i.to_bytes(4, 'big'))
 		oFile.write(i.to_bytes(4, 'big'))
 
 	recursiveSave(oFile, arr)
@@ -68,3 +70,10 @@ def loadBinArr(iFileName):
 
 	iFile.close()
 	return(arr)
+
+
+
+
+arrTest = [[[1,2],[3,4]],[[5,6],[7,8]],[[25,50],[75,100]]]
+saveBinArr("testO.bin", arrTest)
+print("Done")
