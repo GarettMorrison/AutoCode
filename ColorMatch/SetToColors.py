@@ -1,4 +1,3 @@
-import ezdxf
 from PIL import Image
 import math as m
 import os

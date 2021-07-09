@@ -6,6 +6,7 @@ import sys
 import random as r
 import time
 
+from pyFunc.bin_customLib import newBinArr, saveBinArr, loadBinArr
 
 #Arguments
 outString = ""
@@ -175,5 +176,6 @@ for i in finCols:
 		print(strOut)
 		fileOut.write(strOut + "\n")
 
+saveBinArr("out/"+outString+"/colors.bin", finCols)
 tImg.save(imgOutString)
 fileOut.close()
