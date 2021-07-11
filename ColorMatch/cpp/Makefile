@@ -3,14 +3,16 @@ CFLAGS = -g #-Wall
 
 TARGET = o/rmIslands.o
 
-$(TARGET) : o/binCust.o rmIslands.cpp
-	g++ $(CFLAGS) -o $(TARGET) o/binCust.o rmIslands.cpp
-
-o/binCust.o : bin_custom.h bin_custom.cpp
+$(TARGET) : tmp/binCust.o rmIslands.cpp
 	mkdir -p o
-	g++ $(CFLAGS) -c -o o/binCust.o bin_custom.cpp
+	g++ $(CFLAGS) -o $(TARGET) tmp/binCust.o rmIslands.cpp
+
+tmp/binCust.o : bin_custom.h bin_custom.cpp
+	mkdir -p tmp
+	g++ $(CFLAGS) -c -o tmp/binCust.o bin_custom.cpp
 
 .PHONY : clean
 
 clean :
 	rm o/*
+	rm tmp/*
