@@ -9,21 +9,6 @@ import time
 from pyFunc.bin_customLib import newBinArr, saveBinArr, loadBinArr
 
 #Arguments
-outString = ""
-try:
-	outString = sys.argv[1]
-except:
-	outString = "output"
-
-try:
-	os.mkdir("out")
-except:
-	print("", end="")
-try:
-	os.mkdir("out/" + outString)
-except:		
-	if len(os.listdir("out/" + outString)) > 1:
-		input("Error: Output Folder out/" + outString + " already exists. Continue?")
 		# sys.exit()
 
 

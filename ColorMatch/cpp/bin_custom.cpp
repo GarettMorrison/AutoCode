@@ -15,8 +15,15 @@ multiArray::multiArray(){
 }
 
 
+
+
+
+
+
 multiArray::multiArray(uint32_t _dims, uint32_t* _lens, uint8_t defVal){
-	int* posArr = new int[10];
+	posArr = new int[10];
+	cout << "Making new multiArray\n";
+
 
 	dims = _dims;
 	lens = new uint32_t [dims];
@@ -51,6 +58,36 @@ multiArray::~multiArray(){
 }
 
 
+
+
+// Get pointer to area of memory
+// Reccomended to only pull at lowest dimension
+uint8_t* multiArray::getPtr(int p0, int p1, int p2, int p3, int p4, int p5, int p6, int p7, int p8, int p9){
+	posArr[0] = p0;
+	posArr[1] = p1;
+	posArr[2] = p2;
+	posArr[3] = p3;
+	posArr[4] = p4;
+	posArr[5] = p5;
+	posArr[6] = p6;
+	posArr[7] = p7;
+	posArr[8] = p8;
+	posArr[9] = p9;
+	uint8_t* outVar = getPtr(posArr);
+	return(outVar);
+}
+
+uint8_t* multiArray::getPtr(int* pos){
+	uint index = 0;
+	for(int i=0; i<dims; i++){
+		index += dimMults[i]*pos[i];
+	}
+	return(&vals[index]);
+}
+
+
+
+//Get value at address
 uint8_t multiArray::get(int p0, int p1, int p2, int p3, int p4, int p5, int p6, int p7, int p8, int p9){
 	posArr[0] = p0;
 	posArr[1] = p1;
@@ -62,7 +99,7 @@ uint8_t multiArray::get(int p0, int p1, int p2, int p3, int p4, int p5, int p6, 
 	posArr[7] = p7;
 	posArr[8] = p8;
 	posArr[9] = p9;
-	get(posArr);
+	return(get(posArr));
 }
 
 uint8_t multiArray::get(int* pos){
@@ -73,6 +110,9 @@ uint8_t multiArray::get(int* pos){
 	return(vals[index]);
 }
 
+
+
+//Set value at point
 uint8_t multiArray::set(uint8_t inVal, int p0, int p1, int p2, int p3, int p4, int p5, int p6, int p7, int p8, int p9){
 	posArr[0] = p0;
 	posArr[1] = p1;
@@ -116,17 +156,18 @@ uint readToInt(ifstream &iFile, int length){
 		outVal = outVal << 8;
 
 		outVal += tempVal;
-
-		// printf("Read byte %d as %i\n",i, tempVal);
 	}
 
 	return(outVal);
 }
 
 multiArray::multiArray(string iFileName, bool setDebug){
-	int* posArr = new int[10];
+	posArr = new int[10];
 	//Set debug status
 	debugMode = setDebug;
+
+
+	if(debugMode){cout << "File reading: " << iFileName << '\n';}
 
 	//Open iFile
 	ifstream iFile;
@@ -156,20 +197,10 @@ multiArray::multiArray(string iFileName, bool setDebug){
 		}
 	}
 
-	int fooIt = 1;
-
 	// //Fill in array from text
-	// printf("Read Vals\n");
 	vals = new uint8_t[valCount];
 	for(int i=0; i<valCount; i++){
 		vals[i] = readToInt(iFile, 1);
-
-		// printf("%d ", vals[i]);
-		if(i / lens[0] >= fooIt){
-			fooIt += 1;
-			// printf("\n");
-		}
-		// if(vals[i] > 0){printf("%d\n", vals[i]);}
 	}
 	// printf("\n");
 	iFile.close();

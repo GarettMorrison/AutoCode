@@ -1,4 +1,3 @@
-import ezdxf
 from PIL import Image
 import math as m
 import os
@@ -6,7 +5,7 @@ import sys
 import subprocess as sp
 # import random as r
 # import time
-from pyFunc.bin_customLib import newBinArr, saveBinArr, loadBinArr
+from pyCommon.bin_customLib import newBinArr, saveBinArr, loadBinArr
 
 minGroupSize = 100
 

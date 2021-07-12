@@ -30,23 +30,41 @@ try:
 	outFolder = sys.argv[1]
 except:
 	outFolder = input("Enter a name for the folder to save in:")
-
-outFolder += '/'
+outFolder = "out/" + outFolder + '/' 
 
 newDir(outFolder, True)
 newDir(outFolder + "bin")
 newDir(outFolder + "dat")
 
 print("Selecting input image:")
-moveInputFile(".png", [".","./img"], outFolder + "original.png")
+if len(sys.argv) > 2:
+	if os.path.exists(sys.argv[2]):
+		sp.run(["cp", sys.argv[2], outFolder + "original.png"])
+	else:
+		print("Image path |" + sys.argv[2] +  "| does not exist")
+		sys.exit()
+else:
+	moveInputFile(".png", [".","./img"], outFolder + "original.png")
 
-#Init image data
-# initImageComm = ["python3", "initializeCM.py", outFolder]
-# if len(sys.argv) > 2:
-# 	initImageComm.append(sys.argv[2])
 
-# initImage = sp.run(initImageComm) #initialize image
-# saveTag("initImg", outFolder)
+
+print("Selecting input colors:")
+if len(sys.argv) > 3:
+	if os.path.exists(sys.argv[3]):
+		sp.run(["cp", sys.argv[3], outFolder + "dat/colors.txt"])
+	else:
+		print("File path |" + sys.argv[3] +  "| does not exist")
+		sys.exit()
+else:
+	moveInputFile(".txt", [".","./col"], outFolder + "dat/colors.txt")
+
+
+
+
+
+print("Clearing log folder")
+for file in os.listdir("log_dump"):
+	os.remove("log_dump/" + file)
 
 print("Initializing pyFiles")
 
@@ -145,6 +163,7 @@ class job:
 # 		self.args = inArgs
 
 
+
 #Jobs to be ran
 runQueue = []		#listed by index in pyFiles
 
@@ -176,7 +195,7 @@ while True:
 		i = 0
 		while i < len(curr_jobs):
 			if curr_jobs[i].proc.poll() is not None: #If job has finished
-				curr_doneTags = curr_doneTags + [curr_jobs[i].file.name]
+				curr_doneTags = curr_doneTags + [curr_jobs[i].file.shortHand]
 				del curr_jobs[i]
 
 			else:	#Not done, save locks

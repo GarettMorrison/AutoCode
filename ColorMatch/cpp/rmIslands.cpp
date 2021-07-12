@@ -25,7 +25,7 @@ struct linkPoint{
 
 
 int main(){
-	multiArray pixIn("cArr.bin", true);
+	multiArray pixIn("colMap.bin", true);
 	
 
 
@@ -194,7 +194,7 @@ int main(){
 	// }
 
 	cout << "Saving\n";
-	pixIn.save("ncArr.bin");
+	pixIn.save("colMap.bin");
 	printf("All saved!");
 
 	//Clean up

@@ -15,8 +15,11 @@ public:
 	multiArray(string iFileName, bool setDebug = false);
 	~multiArray();
 
+	uint8_t* getPtr(int*pos);
+	uint8_t* getPtr(int p0=0, int p1=0, int p2=0, int p3=0, int p4=0, int p5=0, int p6=0, int p7=0, int p8=0, int p9=0);
+
 	uint8_t get(int* pos);
-	uint8_t get(int p0, int p1=0, int p2=0, int p3=0, int p4=0, int p5=0, int p6=0, int p7=0, int p8=0, int p9=0); //Kinda dumb ngl, but allows easier get() syntax
+	uint8_t get(int p0=0, int p1=0, int p2=0, int p3=0, int p4=0, int p5=0, int p6=0, int p7=0, int p8=0, int p9=0); //Kinda dumb ngl, but allows easier get() syntax
 	
 	void set(uint8_t inVal, int* pos);
 	uint8_t set(uint8_t inVal, int p0=0, int p1=0, int p2=0, int p3=0, int p4=0, int p5=0, int p6=0, int p7=0, int p8=0, int p9=0); //Also dumb, but allows easier set() syntax

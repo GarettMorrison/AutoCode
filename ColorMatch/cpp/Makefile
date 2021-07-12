@@ -1,18 +1,23 @@
-OBJ =  o/binCust.o
-CFLAGS = -g #-Wall
+CC = g++ # Flag for implicit rules
+CFLAGS = -g # Flag for implicit rules. Turn on debug info
 
-TARGET = o/rmIslands.o
+all: o/rmIslands.o o/matchToPix.o
 
-$(TARGET) : tmp/binCust.o rmIslands.cpp
+o/rmIslands.o : tmp/bin_custom.o rmIslands.cpp
 	mkdir -p o
-	g++ $(CFLAGS) -o $(TARGET) tmp/binCust.o rmIslands.cpp
+	$(CC) $(CFLAGS) -o o/rmIslands.o tmp/bin_custom.o rmIslands.cpp
 
-tmp/binCust.o : bin_custom.h bin_custom.cpp
+o/matchToPix.o : tmp/bin_custom.o matchToPix.cpp
+	mkdir -p o
+	$(CC) $(CFLAGS) -o o/matchToPix.o tmp/bin_custom.o matchToPix.cpp
+
+
+tmp/bin_custom.o : bin_custom.h bin_custom.cpp
 	mkdir -p tmp
-	g++ $(CFLAGS) -c -o tmp/binCust.o bin_custom.cpp
+	$(CC) $(CFLAGS) -c -o tmp/bin_custom.o bin_custom.cpp
 
 .PHONY : clean
 
 clean :
-	rm o/*
-	rm tmp/*
+	rm -f o/*
+	rm -f tmp/*
