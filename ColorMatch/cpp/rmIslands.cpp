@@ -12,7 +12,7 @@ using namespace std;
 int iW;
 int iH;
 
-int minGroupSize = 20;
+int minGroupSize = 5;
 
 int adjPtsOffsets[4][2] = {{0,1},{0,-1},{1,0},{-1,0}};
 
@@ -24,8 +24,14 @@ struct linkPoint{
 
 
 
-int main(){
-	multiArray pixIn("colMap.bin", true);
+int main(int argc, char *argv[]){
+	if(argc < 2){
+		printf("Too Few Args")
+	}
+	multiArray pixIn(argv[1], true);
+	if(argc > 2){
+		minGroupSize = stoi(argv[2])
+	}
 	
 
 

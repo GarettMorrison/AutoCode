@@ -21,7 +21,7 @@ def moveInputFile(extension, checkDirs, placeFile):
 		print("No files Found")
 		sys.exit()
 	else:
-		print("Multiple files Found. Please select one.")
+		print("Files found:")
 		for i in range(len(imgPaths)):
 			print(str(i).ljust(4, " ") + imgPaths[i])
 		index = int(input("Select Index:"))
