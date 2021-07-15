@@ -169,7 +169,7 @@ runQueue = []		#listed by index in pyFiles
 
 
 #Current jobs
-curr_jobs = []		#list of job instances instances
+curr_jobs = []		#list of job instances
 
 #Currently applied tags
 curr_locks = []		#tags that there can only be one of at a time
@@ -179,6 +179,8 @@ curr_doneTags = []	#tags to add when done
 nextProcID = 0
 
 print("-------------" + inStr)
+
+tagSave = open(outFolder + "dat/tags.txt", 'w')
 
 while True:
 	if inStr == "": 
@@ -203,6 +205,7 @@ while True:
 		while i < len(curr_jobs):
 			if curr_jobs[i].proc.poll() is not None: #If job has finished
 				curr_doneTags = curr_doneTags + [curr_jobs[i].file.shortHand]
+				tagSave.write(curr_jobs[i].file.shortHand + '\n')
 				del curr_jobs[i]
 
 			else:	#Not done, save locks
@@ -259,3 +262,5 @@ while True:
 		time.sleep(0.25)
 
 
+
+tagSave.close()

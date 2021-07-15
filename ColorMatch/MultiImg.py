@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+ma#! /usr/bin/python3
 import math as m
 import os
 import sys
@@ -10,7 +10,7 @@ import re
 sys.path.append('pyCommon')
 from getInputFile import moveInputFile, newDir
 
-timeOut = 3000
+timeOut = 1200
 
 
 #Convert all to png and resize using prepImage.sh
@@ -63,7 +63,7 @@ procNames = []
 for file in fileSet:
 	comm = ["python3", "manager.py"]
 	comm = comm + ["ImgMass/"+file[:-4], "ImgMass/"+file, "colors.txt"]
-	comm = comm + ["cpp", "im", "rmim", "kill"]
+	comm = comm + ["cpp", "im", "rmim", "rmi", "kill"]
 	proc = sp.Popen(comm, stdout = writeF, stderr = sp.STDOUT)
 	procSet.append(proc)
 	procNames.append(file[:-4])
