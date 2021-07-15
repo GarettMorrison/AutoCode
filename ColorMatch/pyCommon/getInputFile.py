@@ -30,4 +30,9 @@ def moveInputFile(extension, checkDirs, placeFile):
 	sp.run(["cp", inPath, placeFile])
 
 
-# moveInputFile(".png", [".","./img"], "out/test.png")
+
+def newDir(filePath, checkErr = False):
+	if not os.path.exists(filePath):
+		os.mkdir(filePath)
+	elif checkErr:
+		input("Error: Output Folder " + filePath + " already exists. Continue?")

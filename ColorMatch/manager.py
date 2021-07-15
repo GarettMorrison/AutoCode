@@ -7,7 +7,7 @@ import pty
 import time
 import re
 
-from pyCommon.getInputFile import moveInputFile
+from pyCommon.getInputFile import moveInputFile, newDir
 
 finTags = []
 
@@ -17,12 +17,6 @@ def saveTag(inTag, targDir):
 	tagFile = open(targDir + "/dat/tags.txt", 'w')
 	for foo in finTags: tagFile.write(foo + '\n')
 	tagFile.close()
-
-def newDir(filePath, checkErr = False):
-	if not os.path.exists(filePath):
-		os.mkdir(filePath)
-	elif checkErr:
-		input("Error: Output Folder " + outFolder + " already exists. Continue?")
 
 #Get name of new folder
 outFolder = ""
@@ -68,7 +62,7 @@ for file in os.listdir("log_dump"):
 
 print("Initializing pyFiles")
 
-#Class is used to manage tags to run scripts in pyFunc
+#Class is used to manage tags to run scripts in func
 class pyFile():
 	name = ""
 	filePath = ""
@@ -119,12 +113,12 @@ class pyFile():
 pyFiles = []
 pyFileIndex = 0
 
-files = os.walk("./pyFunc")
+files = os.walk("./func")
 for fooScript in next(files)[2]:
 	if fooScript[-3:] != ".py":
 		continue
 
-	pyFiles.append(pyFile("pyFunc/" + fooScript))
+	pyFiles.append(pyFile("func/" + fooScript))
 	pyFileIndex += 1
 #Done with scripts, all loaded
 
@@ -162,10 +156,17 @@ class job:
 # 		self.file = _pyFile
 # 		self.args = inArgs
 
+killWhenDone = False
+inStr = ""
+for i in range(4, len(sys.argv)):
+	if sys.argv[i] == "kill": killWhenDone = True
+	inStr = inStr + ' ' + sys.argv[i]
 
 
 #Jobs to be ran
 runQueue = []		#listed by index in pyFiles
+
+
 
 #Current jobs
 curr_jobs = []		#list of job instances instances
@@ -177,8 +178,12 @@ curr_doneTags = []	#tags to add when done
 #Init procID as 0
 nextProcID = 0
 
+print("-------------" + inStr)
+
 while True:
-	inStr = input("CM:")
+	if inStr == "": 
+		if killWhenDone: sys.exit()
+		inStr = input("CM:")
 	inComms = inStr.split(' ')
 	if '' in inComms: inComms.remove('')
 	for fooComm in inComms:
@@ -187,6 +192,8 @@ while True:
 			if fooComm == pyFiles[i].shortHand or fooComm == pyFiles[i].name: 
 				print("Queue Comm: " + fooComm)
 				runQueue.append(i)
+	inStr = ""
+
 
 	#Loop until queue is empty
 	while len(runQueue) > 0 or len(curr_jobs) > 0:
@@ -215,7 +222,9 @@ while True:
 			for foo_reqTag in fooFile.reqTags:	#Do not add if reqtags not met
 				if foo_reqTag not in curr_doneTags: 
 					print("REQ TAG")
-					addJob = False	
+					addJob = False
+
+
 			
 			if not addJob:
 				i += 1
