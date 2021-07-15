@@ -21,10 +21,10 @@ newDir(workDir + "split")
 
 colors = loadBinArr(outFolder + "bin/cols.bin")
 
-boxSize = 40
-finGroupSize = 1
-initGroupSize = 60
-timeOut = 45
+boxSize = 100
+groupSize = 30
+
+timeOut = 60
 
 colMap = loadBinArr(outFolder + "bin/colMap.bin")
 
@@ -65,26 +65,30 @@ for x in range(xDivs):
 tossOut = open(os.devnull, 'w')
 jobSet = []
 idSet = []
+
+dumpOut = open("log_dump/rmi.txt", "w")
+
 for x in range(xDivs):
 	for y in range(yDivs):
-		fooProc = sp.Popen(["./rmIslands.o", "split/"+"s_"+str(x)+'_'+str(y)+".bin", str(initGroupSize)], cwd = workDir, stderr = sp.STDOUT)#, stdout = tossOut)
+		fooProc = sp.Popen(["./rmIslands.o", "split/"+"s_"+str(x)+'_'+str(y)+".bin", str(groupSize)], cwd = workDir, stderr = sp.STDOUT, stdout = dumpOut)
 		print("Init job on " + "split/"+"s_"+str(x)+'_'+str(y)+".bin")
 		jobSet.append(fooProc)
 		idSet.append(str(x) + '_' + str(y))
 
+dumpOut.close()
 
 del colMap
 del tempArr
-colMap = newBinArr([iW,iH])
 startTime = time.time()
 
 #Wait for procs to end
 while len(jobSet) > 0:
 	i = 0
 	while i < len(jobSet):
-		if jobSet[i].poll() is None:
+		if jobSet[i].poll() is not None:
 			jobSet.pop(i)
 			idSet.pop(i)
+
 		i += 1
 	print(str(len(jobSet)) + " jobs remaining")
 	print(idSet)
@@ -105,6 +109,7 @@ while len(jobSet) > 0:
 
 
 #Save output
+colMap = newBinArr([iW,iH])
 print("Reloading!")
 
 for x in range(xDivs):
@@ -119,7 +124,7 @@ for x in range(xDivs):
 				# print(str(ix) + ',' + str(iy) + " real:" + str(xBreaks[x]) + ',' + str(yBreaks[y]))
 				colMap[ix + xBreaks[x]][iy + yBreaks[y]] = tempArr[ix][iy]
 
-print("Saving midpoint image")
+print("Saving " +outFolder +"rmiMult.png")
 oImg = Image.new("RGB", (len(colMap), len(colMap[0])), 0)
 oPix = oImg.load()
 for x in range(len(colMap)):
@@ -127,28 +132,29 @@ for x in range(len(colMap)):
 		colInd = colMap[x][y]
 		oPix[x,y] = (colors[colInd][0], colors[colInd][1], colors[colInd][2])
 
-oImg.save(outFolder +"rmiMult_mid.png")
-oImg.close()
-
-
-print("Running final combination")
-saveBinArr(outFolder + "bin/colMap.bin",colMap)
-del colMap
-sp.run(["./rmIslands.o", "colMap.bin", str(finGroupSize)], cwd = workDir, stderr = sp.STDOUT)#, stdout = tossOut)
-
-colMap = loadBinArr(outFolder + "bin/colMap.bin")
-print("Saving final image")
-oImg = Image.new("RGB", (len(colMap), len(colMap[0])), 0)
-oPix = oImg.load()
-for x in range(len(colMap)):
-	for y in range(len(colMap[0])):
-		colInd = colMap[x][y]
-		# for i in range(3): outPix[x][y][i] = colors[colInd][i]
-		oPix[x,y] = (colors[colInd][0], colors[colInd][1], colors[colInd][2])
-
-oImg.save(outFolder +"rmiMult_final.png")
+oImg.save(outFolder +"rmiMult.png")
 oImg.save(outFolder +"matched.png")
 oImg.close()
 
 
-sys.exit()
+sp.run(["rm", workDir+"split/", "-r"])
+
+
+# print("Running final combination")
+# saveBinArr(outFolder + "bin/colMap.bin",colMap)
+# del colMap
+# sp.run(["./rmIslands.o", "colMap.bin", str(finGroupSize)], cwd = workDir, stderr = sp.STDOUT)#, stdout = tossOut)
+
+# colMap = loadBinArr(outFolder + "bin/colMap.bin")
+# print("Saving final image")
+# oImg = Image.new("RGB", (len(colMap), len(colMap[0])), 0)
+# oPix = oImg.load()
+# for x in range(len(colMap)):
+# 	for y in range(len(colMap[0])):
+# 		colInd = colMap[x][y]
+# 		# for i in range(3): outPix[x][y][i] = colors[colInd][i]
+# 		oPix[x,y] = (colors[colInd][0], colors[colInd][1], colors[colInd][2])
+
+# oImg.save(outFolder +"rmiMult_final.png")
+# oImg.save(outFolder +"matched.png")
+# oImg.close()

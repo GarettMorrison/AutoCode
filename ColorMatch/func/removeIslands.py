@@ -12,10 +12,14 @@ from bin_customLib import newBinArr, saveBinArr, loadBinArr
 #reqTags cpp im
 #locks matched
 #desc Remove small areas from image
-	
+
+groupSize = 40
+
+
+
 outFolder = sys.argv[1]
 
-sp.run(["./rmIslands.o", "colMap.bin", "100"], cwd=outFolder +"bin/", stderr = sp.STDOUT)
+sp.run(["./rmIslands.o", "colMap.bin", str(groupSize)], cwd=outFolder +"bin/", stderr = sp.STDOUT)
 
 colMap = loadBinArr(outFolder + "bin/colMap.bin")
 colors = loadBinArr(outFolder + "bin/cols.bin")

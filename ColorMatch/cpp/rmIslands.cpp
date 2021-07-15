@@ -30,7 +30,7 @@ int main(int argc, char *argv[]){
 	}
 	string fileName = argv[1];
 
-	multiArray pixIn(fileName, true);
+	multiArray pixIn(fileName);
 	if(argc > 2){
 		minGroupSize = stoi(argv[2]);
 	}
@@ -39,6 +39,8 @@ int main(int argc, char *argv[]){
 
 	iW = pixIn.lens[0];
 	iH = pixIn.lens[1];
+
+	printf("Running rmi.o on size %dx%d\n", iW, iH);
 
 	// cout << pixIn.lens[0] << ' ' << pixIn.lens[1] << '\n';
 
@@ -81,81 +83,116 @@ int main(int argc, char *argv[]){
 
 
 
-	colCount += 1;
+	for(int ptx = 0; ptx < iW; ptx++){
+		// printf("On line %d\n", ptx);
+		for(int pty = 0; pty < iH; pty++){
+			if(ptChecked[ptx][pty]){continue;} //Skip if already checked
 
-	bool colsRemain = true;
+			//Clean currMap
+			for(int x = 0; x < iW; x++){
+				for(int y = 0; y < iH; y++){
+					currMap[x][y] = 0;
+				}
+			}
 
-	//Find groups
-	while(colsRemain){
-		for(int ptx = 0; ptx < iW; ptx++){
-			// printf("On line %d\n", ptx);
-			for(int pty = 0; pty < iH; pty++){
-				if(ptChecked[ptx][pty]){continue;} //Skip if already checked
+			// printf("bbb\n");
 
-				//Clean currMap
-				for(int x = 0; x < iW; x++){
-					for(int y = 0; y < iH; y++){
-						currMap[x][y] = 0;
+			int targCol = pixIn.get(ptx,pty);
+
+			//Loop and find group borders
+			int groupCount = 0;
+
+			currMap[ptx][pty] = 1;
+
+			linkPoint* currPoint = new linkPoint;
+			linkPoint* lastPoint = currPoint;
+			currPoint -> x = ptx;
+			currPoint -> y = pty;
+
+			while(currPoint != NULL){
+				for(int i = 0; i < 4; i++){
+					// printf("DDDDDD\n");
+					int x = currPoint -> x + adjPtsOffsets[i][0];
+					int y = currPoint -> y + adjPtsOffsets[i][1];
+					// printf("pt %d %d %d \n", i, x, y);
+					if(x < 0 || x >= iW || y < 0 || y >= iH){continue;}
+					if(currMap[x][y] != 0){continue;}
+
+					if(pixIn.get(x,y) == targCol){
+						currMap[x][y] = 1;
+						groupCount += 1;
+
+						lastPoint -> next = new linkPoint;
+						lastPoint -> next -> x = x;
+						lastPoint -> next -> y = y;
+						lastPoint = lastPoint -> next;
+					}else{
+						// printf("%d", pixIn.get(x,y));
+						currMap[x][y] = 2;
 					}
 				}
 
-				// printf("bbb\n");
+				linkPoint* temp = currPoint;
+				currPoint = currPoint -> next;
+				delete temp;
+			}	
+			
+			// Found group
+			if(groupCount > minGroupSize){ //Large, dont remove
+				for(int x = 0; x < iW; x++){
+					for(int y = 0; y < iH; y++){
+						if(currMap[x][y] == 1){ptChecked[x][y] = true;}
+					}
+				}
+			}else{
+				// printf("REPLACING GROUP at %d,%d\n", ptx, pty);
+				//Find most common neighbor
+				int* colBuckets = new int[colCount];
+				for(int i=0; i<colCount; i++){colBuckets[i] = 0;}
+				//Fill buckets
+				for(int x = 0; x < iW; x++){
+					for(int y = 0; y < iH; y++){
+						if(currMap[x][y] == 2){colBuckets[pixIn.get(x,y)] += 1;}
+					}
+				}
 
-				int targCol = pixIn.get(ptx,pty);
+				//Find replacement col
+				int bestReplaceCol = 1;
+				int bestReplaceColCount = -1;
+				for(int i=0; i<colCount; i++){
+					// printf("| i%d:%d ", i, colBuckets[i]);
+					// cout << colBuckets[i] << ' ';
+					if(colBuckets[i] > bestReplaceColCount){
+						bestReplaceColCount = colBuckets[i];
+						bestReplaceCol = i;
+					}
+				}
 
-				//Loop and find group borders
-				int groupCount = 0;
+				// printf("\n");
 
-				currMap[ptx][pty] = 1;
 
-				linkPoint* currPoint = new linkPoint;
-				linkPoint* lastPoint = currPoint;
-				currPoint -> x = ptx;
-				currPoint -> y = pty;
+				delete colBuckets;
 
-				while(currPoint != NULL){
-					for(int i = 0; i < 4; i++){
-						// printf("DDDDDD\n");
-						int x = currPoint -> x + adjPtsOffsets[i][0];
-						int y = currPoint -> y + adjPtsOffsets[i][1];
-						// printf("pt %d %d %d \n", i, x, y);
-						if(x < 0 || x >= iW || y < 0 || y >= iH){continue;}
-						if(currMap[x][y] != 0){continue;}
+				//
+				for(int x = 0; x < iW; x++){
+					for(int y = 0; y < iH; y++){
+						if(currMap[x][y] == 1){
+							pixIn.set(bestReplaceCol, x, y);
+							// printf("Replaced %d with %d\n", targCol, bestReplaceCol);
 
-						if(pixIn.get(x,y) == targCol){
-							currMap[x][y] = 1;
-							groupCount += 1;
-
-							lastPoint -> next = new linkPoint;
-							lastPoint -> next -> x = x;
-							lastPoint -> next -> y = y;
-							lastPoint = lastPoint -> next;
-						}else{
-							// printf("%d", pixIn.get(x,y));
-							currMap[x][y] = 2;
 						}
 					}
+				}
 
-					linkPoint* temp = currPoint;
-					currPoint = currPoint -> next;
-					delete temp;
-				}	
+
+				// cout << "RM " << targCol << " -> " << bestReplaceCol << '\n';
 			}
+			
 		}
 	}
 
-
-	// printf("Final Output\n");
-	// for(int ptx = 0; ptx < iW; ptx++){
-	// 	for(int pty = 0; pty < iH; pty++){
-	// 		printf("%d ", pixIn.get(ptx, pty));
-	// 	}
-	// 	printf("\n");
-	// }
-
-	cout << "Saving to " << fileName << '\n';
+	printf("Saving to: %S\n", fileName);
 	pixIn.save(fileName);
-	printf("All saved!");
 
 	//Clean up
 	for(int i = 0; i < iH; i++){
@@ -168,5 +205,5 @@ int main(int argc, char *argv[]){
 	delete[] ptChecked;
 	delete pos;
 
-	cout << "DONE!\n";
+	printf("rmIsland.o done!\n");
 }
