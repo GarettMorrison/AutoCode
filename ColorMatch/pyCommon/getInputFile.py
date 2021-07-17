@@ -34,5 +34,7 @@ def moveInputFile(extension, checkDirs, placeFile):
 def newDir(filePath, checkErr = False):
 	if not os.path.exists(filePath):
 		os.mkdir(filePath)
+		return(True)
 	elif checkErr:
 		input("Error: Output Folder " + filePath + " already exists. Continue?")
+		return(False)

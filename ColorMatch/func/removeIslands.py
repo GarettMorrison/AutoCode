@@ -13,7 +13,7 @@ from bin_customLib import newBinArr, saveBinArr, loadBinArr
 #locks matched
 #desc Remove small areas from image
 
-groupSize = 40
+groupSize = 50
 
 
 

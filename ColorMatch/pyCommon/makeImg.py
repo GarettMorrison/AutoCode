@@ -9,7 +9,10 @@ def saveColMapImg(path, colMap, colors):
 	for x in range(len(colMap)):
 		for y in range(len(colMap[0])):
 			colInd = colMap[x][y]
-			oPix[x,y] = (colors[colInd][0], colors[colInd][1], colors[colInd][2])
+			if colInd == 255:
+				oPix[x,y] = (0,0,0)
+			else:
+				oPix[x,y] = (colors[colInd][0], colors[colInd][1], colors[colInd][2])
 	oImg.save(path)
 	oImg.close()
 
