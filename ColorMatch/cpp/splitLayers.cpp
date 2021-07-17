@@ -23,6 +23,7 @@ struct linkPoint{
 
 
 int main(int argc, char *argv[]){
+	printf("STL CPP INIT\n");
 	if(argc < 2){
 		printf("Too Few Args");
 	}
@@ -64,13 +65,14 @@ int main(int argc, char *argv[]){
 
 
 
-	bool** ptChecked = new bool*[iW];
+	int** ptChecked = new int*[iW];
 
+	multiArray outArrBin(2, mapLens, 255);
 
 	for(int i = 0; i < iW; i++){
-		ptChecked[i] = new bool[iH];
+		ptChecked[i] = new int[iH];
 		for(int j = 0; j < iH; j++){
-			ptChecked[i][j] = false;
+			ptChecked[i][j] = 255;
 		}
 	}
 
@@ -86,154 +88,142 @@ int main(int argc, char *argv[]){
 			colGroupSizes[foo] += 1;
 		}
 	}
-	for(int x=0; x < colCount; x++){printf("Col %d : %d\n", x, colGroupSizes[x]);}
+	// for(int x=0; x < colCount; x++){printf("Col %d : %d\n", x, colGroupSizes[x]);}
+
+
+	uint* TEMPCHECKS = new uint[colCount];
+
+
 
 	uint* colEdgeCounts = new uint[colCount];
-	for(int x=0; x < colCount; x++){
-		colEdgeCounts[x] = 0;
-	}
+	size_t outputCount = 0;
+	bool pixRemaining = true;
+	while(pixRemaining){	//Loop until all cols have been printed
+		pixRemaining = false;
 
-	//Go over edges of map
-	for(int ptx = 0; ptx < iW; ptx++){
-		if(ptx != 0 && ptx != iW-1){continue;} //Skip non edge
-		for(int pty = 0; pty < iH; pty++){
-			if(pty != 0 && pty != iH-1){continue;} //Skip non edge
-
-			if(ptChecked[ptx][pty]){continue;} //Skip if already checked
-
-			// printf("bbb\n");
-
-			int targCol = pixIn.get(ptx,pty);
-
-			//Loop and find group borders
+		for(int x=0; x < colCount; x++){	//Reset edgecounts
+			colEdgeCounts[x] = 0;
+			TEMPCHECKS[x] = 0;
+		}
 
 
-			linkPoint* currPoint = new linkPoint;
-			linkPoint* lastPoint = currPoint;
-			currPoint -> x = ptx;
-			currPoint -> y = pty;
+		for(int ptx = 0; ptx < iW; ptx++){
+			for(int pty = 0; pty < iH; pty++){
+				ptChecked[ptx][pty] = 255;
+			}
+		}
 
-			while(currPoint != NULL){
-				for(int i = 0; i < 4; i++){
-					// printf("DDDDDD\n");
-					int x = currPoint -> x + adjPtsOffsets[i][0];
-					int y = currPoint -> y + adjPtsOffsets[i][1];
-					// printf("pt %d %d %d \n", i, x, y);
-					if(x < 0 || x >= iW || y < 0 || y >= iH){continue;}
-					if(ptChecked[x][y]){continue;}
 
-					if(pixIn.get(x,y) == targCol || pixIn.get(x,y) == 255){
-						ptChecked[x][y] = true;
-						colEdgeCounts[targCol] += 1;
+		//Go over edges of map
+		for(int targCol = 0; targCol < colCount; targCol++){	//Loop over checking all colors
+			if(colGroupSizes[targCol] == 0){continue;}
+			pixRemaining = true;
+			printf("Check %d\n", targCol);
 
-						lastPoint -> next = new linkPoint;
-						lastPoint -> next -> x = x;
-						lastPoint -> next -> y = y;
-						lastPoint = lastPoint -> next;
+			for(int ptx = 0; ptx < iW; ptx++){
+				for(int pty = 0; pty < iH; pty++){
+					if(ptx != 0 && ptx != iW-1 && pty != 0 && pty != iH-1){continue;} //Skip non edge
+					
+					int tmpFoo = pixIn.get(ptx,pty);
+					if(tmpFoo < colCount){TEMPCHECKS[tmpFoo] += 1;}
+					
+					
+
+					if(ptChecked[ptx][pty] != 255){continue;} //Skip if already checked
+					if(pixIn.get(ptx,pty) != 255 && pixIn.get(ptx,pty) != targCol){continue;}
+
+					//Loop and find group borders
+
+					linkPoint* currPoint = new linkPoint;
+					linkPoint* lastPoint = currPoint;
+					currPoint -> x = ptx;
+					currPoint -> y = pty;
+
+					while(currPoint != NULL){
+						for(int i = 0; i < 4; i++){
+							// printf("DDDDDD\n");
+							int x = currPoint -> x + adjPtsOffsets[i][0];
+							int y = currPoint -> y + adjPtsOffsets[i][1];
+							// printf("pt %d %d %d \n", i, x, y);
+							if(x < 0 || x >= iW || y < 0 || y >= iH){continue;}
+							if(ptChecked[x][y] == targCol){continue;}
+
+							if(pixIn.get(x,y) == targCol || pixIn.get(x,y) == 255){
+								ptChecked[x][y] = targCol;
+
+								if(pixIn.get(x,y) == targCol){
+									colEdgeCounts[targCol] += 1;
+									// pixRemaining = true;
+								}
+
+								lastPoint -> next = new linkPoint;
+								lastPoint -> next -> x = x;
+								lastPoint -> next -> y = y;
+								lastPoint = lastPoint -> next;
+							}
+						}
+
+						linkPoint* temp = currPoint;
+						currPoint = currPoint -> next;
+						delete temp;
 					}
+
 				}
-
-				linkPoint* temp = currPoint;
-				currPoint = currPoint -> next;
-				delete temp;
-			}
-
-		}
-	}
-
-	int maxInd = -1;
-	int maxCount = 0;
-	for(int i=0; i<colCount; i++){
-		if(colGroupSizes[i] > maxCount){
-			maxCount = colGroupSizes[i];
-			maxInd = i;
-		}
-	}
-
-
-	for(int x = 0; x < iW; x++){
-		for(int y = 0; y < iH; y++){
-			if(pixIn.get(x,y) == targCol || pixIn.get(x,y) == 255){
-
 			}
 		}
+
+
+		if(!pixRemaining){break;}
+		// for(int i=0; i<colCount; i++){printf("EdgeCounts %d %d\n", i, TEMPCHECKS[i]);}
+
+		int maxInd = -1;
+		float bestRatio = -1;
+		for(int i=0; i<colCount; i++){
+			if(colGroupSizes[i] < 1){continue;}
+
+			float currRatio = (float)colEdgeCounts[i]/(float)colGroupSizes[i];
+
+			printf("%d %d %d %.7f \n", i, colGroupSizes[i], colEdgeCounts[i], currRatio);
+			if(currRatio > bestRatio){
+				bestRatio = (float)colEdgeCounts[i]/(float)colGroupSizes[i];
+				maxInd = i;
+			}
+			else if(currRatio == bestRatio && colGroupSizes[i] > colGroupSizes[maxInd]){
+				bestRatio = (float)colEdgeCounts[i]/(float)colGroupSizes[i];
+				maxInd = i;	
+			}
+		}
+
+		for(int x = 0; x < iW; x++){
+			for(int y = 0; y < iH; y++){
+				if(pixIn.get(x,y) == maxInd || pixIn.get(x,y) == 255){
+					outArrBin.set(maxInd, x, y);
+					pixIn.set(255, x, y);
+				}
+				else{
+					outArrBin.set(255, x, y);
+				}
+			}
+		}
+		colGroupSizes[maxInd] = 0; //Do not consider in future
+		printf("Saving number %d color %d\n\n", outputCount, maxInd);
+		outArrBin.save(savDir + to_string(outputCount) + "_" + to_string(maxInd) + "_outPix.bin");
+		outputCount += 1;
 	}
-	// 		//Found group
-	// 		if(groupCount > minGroupSize){ //Large, dont remove
-	// 			for(int x = 0; x < iW; x++){
-	// 				for(int y = 0; y < iH; y++){
-	// 					if(currMap[x][y] == 1){ptChecked[x][y] = true;}
-	// 				}
-	// 			}
-	// 		}else{
-	// 			// printf("REPLACING GROUP at %d,%d\n", ptx, pty);
-	// 			//Find most common neighbor
-	// 			int* colBuckets = new int[colCount];
-	// 			for(int i=0; i<colCount; i++){colBuckets[i] = 0;}
-	// 			//Fill buckets
-	// 			for(int x = 0; x < iW; x++){
-	// 				for(int y = 0; y < iH; y++){
-	// 					if(currMap[x][y] == 2){colBuckets[pixIn.get(x,y)] += 1;}
-	// 				}
-	// 			}
 
-	// 			//Find replacement col
-	// 			int bestReplaceCol = 1;
-	// 			int bestReplaceColCount = -1;
-	// 			for(int i=0; i<colCount; i++){
-	// 				// printf("| i%d:%d ", i, colBuckets[i]);
-	// 				// cout << colBuckets[i] << ' ';
-	// 				if(colBuckets[i] > bestReplaceColCount){
-	// 					bestReplaceColCount = colBuckets[i];
-	// 					bestReplaceCol = i;
-	// 				}
-	// 			}
-
-	// 			// printf("\n");
-
-
-	// 			delete colBuckets;
-
-	// 			//
-	// 			for(int x = 0; x < iW; x++){
-	// 				for(int y = 0; y < iH; y++){
-	// 					if(currMap[x][y] == 1){
-	// 						pixIn.set(bestReplaceCol, x, y);
-	// 						// printf("Replaced %d with %d\n", targCol, bestReplaceCol);
-
-	// 					}
-	// 				}
-	// 			}
-
-
-	// 			// cout << "RM " << targCol << " -> " << bestReplaceCol << '\n';
-	// 		}
-			
-	// 	}
-	// }
-
-	// // printf("Final Output\n");
-	// // for(int ptx = 0; ptx < iW; ptx++){
-	// // 	for(int pty = 0; pty < iH; pty++){
-	// // 		printf("%d ", pixIn.get(ptx, pty));
-	// // 	}
-	// // 	printf("\n");
-	// // }
-
-	// cout << "Saving to " << fileName << '\n';
-	// pixIn.save(fileName);
-	// printf("All saved!");
+	printf("EXIT LOOP %d\n", iW);
 
 	//Clean up
-	for(int i = 0; i < iH; i++){
+	for(int i = 0; i < iW; i++){
 		delete[] ptChecked[i];
 	}
+
 	// delete[] colVals;
 	delete[] ptChecked;
-	
 	delete pos;
 
 	delete[] colGroupSizes;
 	delete[] colEdgeCounts;
+	printf("STL CPP DONE!\n");
 	// cout << "DONE!\n";
 }
