@@ -9,15 +9,6 @@ import re
 
 from pyCommon.getInputFile import moveInputFile, newDir
 
-finTags = []
-
-
-def saveTag(inTag, targDir):
-	finTags.append(inTag)
-	tagFile = open(targDir + "/dat/tags.txt", 'w')
-	for foo in finTags: tagFile.write(foo + '\n')
-	tagFile.close()
-
 #Get name of new folder
 outFolder = ""
 try:
@@ -26,31 +17,34 @@ except:
 	outFolder = input("Enter a name for the folder to save in:")
 outFolder = "out/" + outFolder + '/' 
 
-newDir(outFolder, True)
+isNewProject = newDir(outFolder, True)
 newDir(outFolder + "bin")
 newDir(outFolder + "dat")
 
-print("Selecting input image:")
-if len(sys.argv) > 2:
-	if os.path.exists(sys.argv[2]):
-		sp.run(["cp", sys.argv[2], outFolder + "original.png"])
+# print(isNewProject)
+
+if isNewProject:
+	print("Selecting input image:")
+	if len(sys.argv) > 2:
+		if os.path.exists(sys.argv[2]):
+			sp.run(["cp", sys.argv[2], outFolder + "original.png"])
+		else:
+			print("Image path |" + sys.argv[2] +  "| does not exist")
+			sys.exit()
 	else:
-		print("Image path |" + sys.argv[2] +  "| does not exist")
-		sys.exit()
-else:
-	moveInputFile(".png", [".","./img"], outFolder + "original.png")
+		moveInputFile(".png", [".","./img"], outFolder + "original.png")
 
 
 
-print("Selecting input colors:")
-if len(sys.argv) > 3:
-	if os.path.exists(sys.argv[3]):
-		sp.run(["cp", sys.argv[3], outFolder + "dat/colors.txt"])
+	print("Selecting input colors:")
+	if len(sys.argv) > 3:
+		if os.path.exists(sys.argv[3]):
+			sp.run(["cp", sys.argv[3], outFolder + "dat/colors.txt"])
+		else:
+			print("File path |" + sys.argv[3] +  "| does not exist")
+			sys.exit()
 	else:
-		print("File path |" + sys.argv[3] +  "| does not exist")
-		sys.exit()
-else:
-	moveInputFile(".txt", [".","./col"], outFolder + "dat/colors.txt")
+		moveInputFile(".txt", [".","./col"], outFolder + "dat/colors.txt")
 
 
 
@@ -180,7 +174,17 @@ nextProcID = 0
 
 print("-------------" + inStr)
 
-tagSave = open(outFolder + "dat/tags.txt", 'w')
+if not isNewProject:
+	tagLoad = open(outFolder + "dat/tags.txt", 'r')
+	for i in tagLoad:
+		print(i)
+		if i != '':
+			curr_doneTags.append(i[:-1])
+	print(curr_doneTags)
+	tagLoad.close()
+
+
+tagSave = open(outFolder + "dat/tags.txt", 'w+')
 
 while True:
 	if inStr == "": 
