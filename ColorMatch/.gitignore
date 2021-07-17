@@ -8,3 +8,4 @@ testO.bin
 log_dump/
 img/*
 col*
+*pycache*
