@@ -11,8 +11,8 @@ from makeImg import saveColMapImg, savePixImg
 
 #TAGS
 #shortHand stl
-#reqTags cpp rmi
-#locks 
+#reqTags cpp
+#locks matched
 #desc WIP Export matched to workable areas
 
 outFolder = sys.argv[1]

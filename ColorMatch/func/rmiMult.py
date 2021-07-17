@@ -22,7 +22,7 @@ newDir(workDir + "split")
 colors = loadBinArr(outFolder + "bin/cols.bin")
 
 boxSize = 100
-groupSize = 20
+groupSize = 25
 
 timeOut = 60
 

@@ -159,6 +159,7 @@ for i in range(4, len(sys.argv)):
 
 #Jobs to be ran
 runQueue = []		#listed by index in pyFiles
+strQueue = []
 
 
 
@@ -190,16 +191,26 @@ while True:
 	if inStr == "": 
 		if killWhenDone: sys.exit()
 		inStr = input("CM:")
+
 	inComms = inStr.split(' ')
+	print("inComms: " + str(inComms))
 	if '' in inComms: inComms.remove('')
 	for fooComm in inComms:
-		for i in range(len(pyFiles)): 
-			# print("SH:" + pyFiles[i].shortHand + "|NM:" + pyFiles[i].name+'|')
-			if fooComm == pyFiles[i].shortHand or fooComm == pyFiles[i].name: 
-				print("Queue Comm: " + fooComm)
-				runQueue.append(i)
-	inStr = ""
+		if fooComm in {"kill", "KILL","wait", "WAIT"}:
+			print("Queue Comm: " + fooComm)
+			runQueue.append(-1)
+			strQueue.append(fooComm)
+		else:
+			for i in range(len(pyFiles)): 
+				if fooComm == pyFiles[i].shortHand or fooComm == pyFiles[i].name: 
+					print("Queue Func: " + fooComm)
+					runQueue.append(i)
+					strQueue.append(pyFiles[i].shortHand)
 
+	print(inStr)
+	inStr = ""
+	printEvery = 4
+	printIter = 4
 
 	#Loop until queue is empty
 	while len(runQueue) > 0 or len(curr_jobs) > 0:
@@ -220,17 +231,36 @@ while True:
 		i = 0
 		while i < len(runQueue):	#Do not add if lock
 			addJob = True
-			fooFile = pyFiles[runQueue[i]]
-			for foo_lock in fooFile.locks: 
-				if foo_lock in curr_locks: 
-					print("LOCK")
-					addJob = False	
+			if runQueue[i] == -1:
+				fooComm = strQueue[i]
 
-			for foo_reqTag in fooFile.reqTags:	#Do not add if reqtags not met
-				if foo_reqTag not in curr_doneTags: 
-					print("REQ TAG")
-					addJob = False
+				if fooComm in {"kill", "KILL"}:
+					print("EXITING PROGRAM")
+					if len(curr_jobs) > 0:
+						break
+					else:
+						sys.exit()
 
+				elif fooComm in {"wait", "WAIT"}:
+					print("WAITING")
+					if len(curr_jobs) > 0:
+						break
+					else:
+						runQueue.pop(i)
+						strQueue.pop(i)
+						addJob = False
+
+			else:
+				fooFile = pyFiles[runQueue[i]]
+				for foo_lock in fooFile.locks: 
+					if foo_lock in curr_locks: 
+						print("LOCK")
+						addJob = False	
+
+				for foo_reqTag in fooFile.reqTags:	#Do not add if reqtags not met
+					if foo_reqTag not in curr_doneTags: 
+						print("REQ TAG")
+						addJob = False
 
 			
 			if not addJob:
@@ -244,6 +274,7 @@ while True:
 			curr_jobs.append(job(fooFile, args, nextProcID))
 			nextProcID += 1
 			runQueue.pop(i)
+			strQueue.pop(i)
 			curr_locks = curr_locks + fooFile.locks
 
 
@@ -256,14 +287,14 @@ while True:
 
 		print("\nQ:" + str(len(runQueue)) + " R:" + str(len(curr_jobs)) + " D:" + str(len(curr_doneTags)))
 		print("Queued:", end="")
-		for i in runQueue: print(" " + pyFiles[i].name, end="")
+		for i in runQueue: print(" " + pyFiles[i].shortHand, end="")
 		print("\nRunning:", end="")
 		for i in curr_jobs: print(" " + i.title, end="")
 		print("\nCompleted:", end="")
 		for i in curr_doneTags: print(" " + str(i), end="")
 		print("")
 
-		time.sleep(0.25)
+		time.sleep(0.5)
 
 
 
