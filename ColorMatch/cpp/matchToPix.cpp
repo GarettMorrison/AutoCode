@@ -6,19 +6,12 @@
 #include <math.h>
 
 #include "bin_custom.h"
+#include "pixCompare.h"
 
 using namespace std;
 
 int iW;
 int iH;
-
-
-int compPix(uint8_t* val1, uint8_t* val2){
-	int outDiff = 0;
-	for(int i=0; i<3; i++){outDiff += abs(val1[i] - val2[i]);}
-	return(outDiff);
-}
-
 
 int main(){
 	multiArray pixIn("origPix.bin");	//Read original pix vals
@@ -42,13 +35,13 @@ int main(){
 
 			//Get best color index
 			int bestColIndex = 0;
-			int bestColScore = compPix(pixCheck, colors.getPtr(0));
+			uint32_t bestColScore = compPix(pixCheck, colors.getPtr(0));
 
 
 
 			for(int i=1; i<colCount; i++){
 				uint8_t* colCheck = colors.getPtr(i);
-				int score = compPix(pixCheck, colors.getPtr(i));
+				uint32_t score = compPix(pixCheck, colors.getPtr(i));
 				if(score < bestColScore){
 					bestColScore = score;
 					bestColIndex = i;

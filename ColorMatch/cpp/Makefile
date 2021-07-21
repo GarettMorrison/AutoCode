@@ -11,14 +11,19 @@ o/rmIslands.o : tmp/bin_custom.o rmIslands.cpp
 	mkdir -p o
 	$(CC) $(CFLAGS) -o o/rmIslands.o tmp/bin_custom.o rmIslands.cpp
 
-o/matchToPix.o : tmp/bin_custom.o matchToPix.cpp
+o/matchToPix.o : tmp/bin_custom.o tmp/pixCompare.o matchToPix.cpp
 	mkdir -p o
-	$(CC) $(CFLAGS) -o o/matchToPix.o tmp/bin_custom.o matchToPix.cpp
+	$(CC) $(CFLAGS) -o o/matchToPix.o tmp/bin_custom.o tmp/pixCompare.o matchToPix.cpp
 
 
 tmp/bin_custom.o : bin_custom.h bin_custom.cpp
 	mkdir -p tmp
 	$(CC) $(CFLAGS) -c -o tmp/bin_custom.o bin_custom.cpp
+
+tmp/pixCompare.o : pixCompare.h pixCompare.cpp
+	mkdir -p tmp
+	$(CC) $(CFLAGS) -c -o tmp/pixCompare.o pixCompare.cpp
+
 
 .PHONY : clean
 
