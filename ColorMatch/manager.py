@@ -184,8 +184,11 @@ if not isNewProject:
 	print(curr_doneTags)
 	tagLoad.close()
 
+def saveTag(inTag):
+	tagSave = open(outFolder + "dat/tags.txt", 'a+')
+	tagSave.write(inTag + '\n')	
+	tagSave.close()
 
-tagSave = open(outFolder + "dat/tags.txt", 'w+')
 
 while True:
 	if inStr == "": 
@@ -220,7 +223,7 @@ while True:
 		while i < len(curr_jobs):
 			if curr_jobs[i].proc.poll() is not None: #If job has finished
 				curr_doneTags = curr_doneTags + [curr_jobs[i].file.shortHand]
-				tagSave.write(curr_jobs[i].file.shortHand + '\n')
+				saveTag(curr_jobs[i].file.shortHand )
 				del curr_jobs[i]
 
 			else:	#Not done, save locks
@@ -298,4 +301,3 @@ while True:
 
 
 
-tagSave.close()
