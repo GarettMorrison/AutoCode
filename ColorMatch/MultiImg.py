@@ -58,7 +58,7 @@ while i < len(fileSet):
 	
 for i in fileSet: print(i)
 
-commandSet = ["cpp", "im", "rmim", "rmi", "kill"]
+commandSet = ["cpp", "im", "rmim", "rmi", "wait", "stl" "kill"]
 
 procSet = []
 procNames = []
@@ -85,7 +85,6 @@ while len(procSet) > 0:
 		else:	#Not done
 			i += 1
 	time.sleep(0.1)
-
 
 	currTime = time.time()
 
@@ -125,7 +124,7 @@ while len(procSet) > 0:
 
 		print("Working on:")
 		for i in range(1, len(commandSet)):
-			print(f"{commandSet[i]}--------")
+			print(f"{commandSet[i]}-----")
 			for fooPrint in procCommMap[i -1]:
 				print(f"   {fooPrint[0]}")
 

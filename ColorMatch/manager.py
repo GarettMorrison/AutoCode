@@ -48,6 +48,12 @@ if isNewProject:
 
 
 
+def saveTag(inTag):
+	tagSave = open(outFolder + "dat/tags.txt", 'a+')
+	tagSave.write(inTag + '\n')	
+	tagSave.close()
+
+saveTag("OPEN")
 
 
 print("Clearing log folder")
@@ -184,11 +190,6 @@ if not isNewProject:
 	print(curr_doneTags)
 	tagLoad.close()
 
-def saveTag(inTag):
-	tagSave = open(outFolder + "dat/tags.txt", 'a+')
-	tagSave.write(inTag + '\n')	
-	tagSave.close()
-
 
 while True:
 	if inStr == "": 
@@ -287,10 +288,11 @@ while True:
 		# 			break
 		# 	print(curr_jobs[i].file.shortHand + ": " + str(line[:-1]))
 
+		print(len(runQueue))
 
 		print("\nQ:" + str(len(runQueue)) + " R:" + str(len(curr_jobs)) + " D:" + str(len(curr_doneTags)))
 		print("Queued:", end="")
-		for i in runQueue: print(" " + pyFiles[i].shortHand, end="")
+		for i in strQueue: print(" " + i, end="")
 		print("\nRunning:", end="")
 		for i in curr_jobs: print(" " + i.title, end="")
 		print("\nCompleted:", end="")
